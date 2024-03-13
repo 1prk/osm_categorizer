@@ -312,6 +312,7 @@ class NetascoreAssessor(Assessor):
       data = network._get_edge_attributes(network, *labs)
       # Derive attribute values for each street segment from the input data.
       def set_value(x, direction):
+        # testi change ML
         # Categorize the street segment.
         is_bikepath = x["highway"] == "cycleway" or x["cycleway"] == "track"
         is_footpath = x["highway"] == "footway"
