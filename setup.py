@@ -10,7 +10,6 @@ with open("netapy/__init__.py") as f:
       version = line.split("=")[1].strip().strip('"').strip('"')
       continue
 
-#test
 # The text of the README file.
 try:
   with open(here / "README.md") as f:
