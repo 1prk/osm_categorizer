@@ -887,7 +887,8 @@ class NetascoreAssessor(Assessor):
         if x["surface"] in tags:
           return "asphalt"
         # Second option: "gravel"
-        tags = ["compacted", "fine_gravel", "gravel", "paving_stones",
+        # ? ToDo ER: nochmals unterteilen?!
+        tags = ["compacted", "fine_gravel", "gravel", "paving_stones", "granite:plates", "concrete:plates", "concrete:lanes",
                 "pebblestone", "ground;gravel", "unpaved"]
         if x["surface"] in tags:
           return "gravel"
@@ -896,7 +897,7 @@ class NetascoreAssessor(Assessor):
         if x["surface"] in tags:
           return "soft"
         # Fourth option: "cobble"
-        tags = ["cobblestone"]
+        tags = ["cobblestone", "unhewn_cobblestone", "sett"]
         if x["surface"] in tags:
           return "cobble"
         # Fallback option: None
