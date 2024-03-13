@@ -48,10 +48,12 @@ NETASCORE_PROFILES = {
         "indicator": "bicycle_infrastructure",
         "mapping": {
           "bicycle_way": 1,
+          "bicycle_road":1,
           "mixed_way": 0.9,
           "bicycle_lane": 0.75,
           "bus_lane": 0.75,
           "shared_lane": 0.5,
+          "mit_road": 0.5,
           "undefined": 0.2,
           "no": 0
         }
@@ -441,7 +443,7 @@ NETASCORE_STREET_KEYS = [
   "cycleway",
   "cycleway:both",
   "cycleway:left",
-  "cycleway:right"
+  "cycleway:right",
   "foot",
   "footway",
   "sidewalk",
