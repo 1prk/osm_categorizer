@@ -4,11 +4,14 @@ import netapy
 import osmnx as ox
 
 # Eingabe place name
-network = netapy.networks.NetascoreNetwork.from_place("Dresden")
+#network = netapy.networks.NetascoreNetwork.from_place("Dresden")
 # Eingabe bounding box
 #network = netapy.networks.NetascoreNetwork.from_bbox((5.23822733,51.33068278,14.86905163,55.43618192))
 # Eingabe OSM-IDs - funktioniert leider nicht
 #network = netapy.networks.NetascoreNetwork.from_place(query="Dresden", custom_filter='["::type"="way"]["::id"~"1058293583|213731284"]')
+#Eingabe Punkt
+location_point = (51.05817, 13.753634)
+network = netapy.networks.NetascoreNetwork.from_point(point=location_point, dist=1000)
 
 #ox.plot_graph(network, bgcolor = "white", edge_color = "orange", node_color = "grey", node_size = 2)
 
@@ -28,4 +31,4 @@ gdf_nodes, gdf_edges = ox.utils_graph.graph_to_gdfs(assessed)
 G = ox.utils_graph.graph_from_gdfs(gdf_nodes, gdf_edges, graph_attrs=assessed.graph)
 # save graph as a geopackage
 # bei Aenderungen in Abfrage zu Radinfrastruktur habe ich jeweils die Nummer erhoeht.
-ox.io.save_graph_geopackage(G, filepath="./data/RadinfraOSM_Dresden_infra09_reversed.gpkg")
+ox.io.save_graph_geopackage(G, filepath="./data/RadinfraOSM_test_infra09_reversed.gpkg")
