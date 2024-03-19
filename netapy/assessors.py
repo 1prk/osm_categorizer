@@ -339,16 +339,27 @@ class NetascoreAssessor(Assessor):
         can_cardrive = x["highway"] in ["motorway", "trunk", "primary", "secondary", "tertiary", "unclassified", "road",
                                         "residential", "living_street"]
 
-        is_bikepath_right = (x["highway"] == "cycleway"
-                             or x["cycleway"] in ["track"]
+        is_bikepath_right = (#x["highway"] == "cycleway"
+                             #or
+                             x["cycleway"] in ["track"]
                              or x["cycleway:right"] in ["track"]
                              or x["cycleway:both"] in ["track"])
-        is_bikepath_left = (x["highway"] == "cycleway"
-                            or x["cycleway"] in ["track"]
+        is_bikepath_left = (#x["highway"] == "cycleway"
+                            #or
+                            x["cycleway"] in ["track"]
                             or x["cycleway:left"] in ["track"]
                             or x["cycleway:both"] in ["track"])
 
         #### Begin categories
+
+        ##cycleway in its own trace; As already discussed, due to tagging inconsistencies on the user side, we should consider merging this category with "bicycle_way".
+        is_cycleway_right = (x["highway"] == "cycleway"
+                             or is_track and not can_walk_right
+                             or is_track and can_walk_right and is_segregated)
+
+        is_cycleway_left = (x["highway"] == "cycleway"
+                            or is_track and not can_walk_left
+                            or is_track and can_walk_left and is_segregated)
 
         ##bicycle_road
         is_bikeroad = (x["bicycle_road"] == "yes"
@@ -431,6 +442,8 @@ class NetascoreAssessor(Assessor):
               return "bicycle_way_right_bus_left"
             elif any(conditions_mit_left):
               return "bicycle_way_right_mit_left"
+            elif is_cycleway_left:
+              return "bicycle_way_right_cycleway_left"
             else:
               return "bicycle_way_right_no_left"
 
@@ -443,6 +456,8 @@ class NetascoreAssessor(Assessor):
               return "bicycle_way_left_bus_right"
             elif any(conditions_mit_right):
               return "bicycle_way_left_mit_right"
+            elif is_cycleway_right:
+              return "bicycle_way_left_cycleway_right"
             else:
               return "bicycle_way_left_no_right"
 
@@ -456,6 +471,8 @@ class NetascoreAssessor(Assessor):
               return "mixed_way_right_bus_left"
             elif any(conditions_mit_left):
               return "mixed_way_right_mit_left"
+            elif is_cycleway_left:
+              return "mixed_way_right_cycleway_left"
             else:
               return "mixed_way_right_no_left"
 
@@ -466,6 +483,8 @@ class NetascoreAssessor(Assessor):
               return "mixed_way_left_bus_right"
             elif any(conditions_mit_right):
               return "mixed_way_left_mit_right"
+            elif is_cycleway_right:
+              return "mixed_way_left_cycleway_right"
             else:
               return "mixed_way_left_no_right"
 
@@ -477,6 +496,8 @@ class NetascoreAssessor(Assessor):
               return "bicycle_lane_right_bus_left"
             elif any(conditions_mit_left):
               return "bicycle_lane_right_mit_left"
+            elif is_cycleway_left:
+              return "bicycle_lane_right_cycleway_left"
             else:
               return "bicycle_lane_right_no_left"
 
@@ -485,6 +506,8 @@ class NetascoreAssessor(Assessor):
               return "bicycle_lane_left_bus_right"
             elif any(conditions_mit_right):
               return "bicycle_lane_left_mit_right"
+            elif is_cycleway_right:
+              return "bicycle_lane_left_cycleway_right"
             else:
               return "bicycle_lane_left_no_right"
 
@@ -494,12 +517,16 @@ class NetascoreAssessor(Assessor):
               return "bus_lane_both"
             elif any(conditions_mit_left):
               return "bus_lane_right_mit_left"
+            elif is_cycleway_left:
+              return "bus_lane_right_cycleway_left"
             else:
               return "bus_lane_right_no_left"
 
           elif is_buslane_left:
             if any(conditions_mit_right):
               return "bus_lane_left_mit_right"
+            elif is_cycleway_right:
+              return "bus_lane_left_cycleway_right"
             else:
               return "bus_lane_left_no_right"
 
@@ -507,11 +534,26 @@ class NetascoreAssessor(Assessor):
           elif any(conditions_mit_right):
             if any(conditions_mit_left):
               return "mit_road_both"
+            elif is_cycleway_left:
+              return "mit_road_right_cycleway_left"
             else:
               return "mit_road_right_no_left"
 
           elif any(conditions_mit_left):
-            return "mit_road_left_no_right"
+            if is_cycleway_right:
+              return "mit_road_left_cycleway_right"
+            else:
+              return "mit_road_left_no_right"
+
+          #### 7
+          elif is_cycleway_right:
+            if is_cycleway_left:
+              return "cycleway_both"
+            else:
+              return "cycleway_right_no_left"
+
+          elif is_cycleway_left:
+            return "cycleway_left_no_right"
 
           #### Fallback option: "no"
           else:
