@@ -412,127 +412,129 @@ class NetascoreAssessor(Assessor):
           and not is_path and not is_track,
         ]
 
-        cat = None #the initial assignment, if it's not changed through the course, it means category = "no"
+        #cat = None #the initial assignment, if it's not changed through the course, it means category = "no"
 
-        #### 1
-        if any(conditions_b_way_right):
-          if any(conditions_b_way_left):
-            cat = "bicycle_way_both"
+        def get_infra(x):
+          #### 3 # new option: "bicycle_road"
+          if is_bikeroad:
+            return "bicycle_road"
+
+          #### 1
+          elif any(conditions_b_way_right):
+            if any(conditions_b_way_left):
+              return "bicycle_way_both"
+            elif any(conditions_mixed_left):
+              return "bicycle_way_right_mixed_left"
+            elif is_bikelane_left:
+              return "bicycle_way_right_lane_left"
+            elif is_buslane_left:
+              return "bicycle_way_right_bus_left"
+            elif any(conditions_mit_left):
+              return "bicycle_way_right_mit_left"
+            else:
+              return "bicycle_way_right_no_left"
+
+          elif any(conditions_b_way_left):
+            if any(conditions_mixed_right):
+              return "bicycle_way_left_mixed_right"
+            elif is_bikelane_right:
+              return "bicycle_way_left_lane_right"
+            elif is_buslane_right:
+              return "bicycle_way_left_bus_right"
+            elif any(conditions_mit_right):
+              return "bicycle_way_left_mit_right"
+            else:
+              return "bicycle_way_left_no_right"
+
+          #### 2
+          elif any(conditions_mixed_right):
+            if any(conditions_mixed_left):
+              return "mixed_way_both"
+            elif is_bikelane_left:
+              return "mixed_way_right_lane_left"
+            elif is_buslane_left:
+              return "mixed_way_right_bus_left"
+            elif any(conditions_mit_left):
+              return "mixed_way_right_mit_left"
+            else:
+              return "mixed_way_right_no_left"
+
           elif any(conditions_mixed_left):
-            cat = "bicycle_way_right_mixed_left"
-          elif is_bikelane_left:
-            cat = "bicycle_way_right_lane_left"
-          elif is_buslane_left:
-            cat = "bicycle_way_right_bus_left"
-          elif any(conditions_mit_left):
-            cat = "bicycle_way_right_mit_left"
-          else:
-            cat = "bicycle_way_right_no_left"
+            if is_bikelane_right:
+              return "mixed_way_left_lane_right"
+            elif is_buslane_right:
+              return "mixed_way_left_bus_right"
+            elif any(conditions_mit_right):
+              return "mixed_way_left_mit_right"
+            else:
+              return "mixed_way_left_no_right"
 
-        elif any(conditions_b_way_left):
-          if any(conditions_mixed_right):
-            cat = "bicycle_way_left_mixed_right"
+          #### 4 # Third option: "bicycle_lane"
           elif is_bikelane_right:
-            cat = "bicycle_way_left_lane_right"
-          elif is_buslane_right:
-            cat = "bicycle_way_left_bus_right"
-          elif any(conditions_mit_right):
-            cat = "bicycle_way_left_mit_right"
-          else:
-            cat = "bicycle_way_left_no_right"
+            if is_bikelane_left:
+              return "bicycle_lane_both"
+            elif is_buslane_left:
+              return "bicycle_lane_right_bus_left"
+            elif any(conditions_mit_left):
+              return "bicycle_lane_right_mit_left"
+            else:
+              return "bicycle_lane_right_no_left"
 
-        #### 2
-        elif any(conditions_mixed_right):
-          if any(conditions_mixed_left):
-            cat = "mixed_way_both"
           elif is_bikelane_left:
-            cat = "mixed_way_right_lane_left"
-          elif is_buslane_left:
-            cat = "mixed_way_right_bus_left"
-          elif any(conditions_mit_left):
-            cat = "mixed_way_right_mit_left"
-          else:
-            cat = "mixed_way_right_no_left"
+            if is_buslane_right:
+              return "bicycle_lane_left_bus_right"
+            elif any(conditions_mit_right):
+              return "bicycle_lane_left_mit_right"
+            else:
+              return "bicycle_lane_left_no_right"
 
-        elif any(conditions_mixed_left):
-          if is_bikelane_right:
-            cat = "mixed_way_left_lane_right"
+          #### 5 # Fourth option: "bus_lane"
           elif is_buslane_right:
-            cat = "mixed_way_left_bus_right"
-          elif any(conditions_mit_right):
-            cat = "mixed_way_left_mit_right"
-          else:
-            cat = "mixed_way_left_no_right"
+            if is_buslane_left:
+              return "bus_lane_both"
+            elif any(conditions_mit_left):
+              return "bus_lane_right_mit_left"
+            else:
+              return "bus_lane_right_no_left"
 
-        #### 3 # new option: "bicycle_road"
-        elif is_bikeroad:
-          cat = "bicycle_road"
-
-        #### 4 # Third option: "bicycle_lane"
-        elif is_bikelane_right:
-          if is_bikelane_left:
-            cat = "bicycle_lane_both"
           elif is_buslane_left:
-            cat = "bicycle_lane_right_bus_left"
-          elif any(conditions_mit_left):
-            cat = "bicycle_lane_right_mit_left"
-          else:
-            cat = "bicycle_lane_right_no_left"
+            if any(conditions_mit_right):
+              return "bus_lane_left_mit_right"
+            else:
+              return "bus_lane_left_no_right"
 
-        elif is_bikelane_left:
-          if is_buslane_right:
-            cat = "bicycle_lane_left_bus_right"
+          #### 6
           elif any(conditions_mit_right):
-            cat = "bicycle_lane_left_mit_right"
-          else:
-            cat = "bicycle_lane_left_no_right"
+            if any(conditions_mit_left):
+              return "mit_road_both"
+            else:
+              return "mit_road_right_no_left"
 
-        #### 5 # Fourth option: "bus_lane"
-        elif is_buslane_right:
-          if is_buslane_left:
-            cat = "bus_lane_both"
           elif any(conditions_mit_left):
-            cat = "bus_lane_right_mit_left"
+            return "mit_road_left_no_right"
+
+          #### Fallback option: "no"
           else:
-            cat = "bus_lane_right_no_left"
+            return "no"
 
-        elif is_buslane_left:
-          if any(conditions_mit_right):
-            cat = "bus_lane_left_mit_right"
-          else:
-            cat = "bus_lane_left_no_right"
-
-        #### 6
-        elif any(conditions_mit_right):
-          if any(conditions_mit_left):
-            cat = "mit_road_both"
-          else:
-            cat = "mit_road_right_no_left"
-
-        elif any(conditions_mit_left):
-          cat = "mit_road_left_no_right"
-
-        #### Fallback option: "no"
-        if cat is None:
-          return "no"
-
+        cat = None
+        cat = get_infra(x)
         # making sure that the variable cat has been filled
         assert(isinstance(cat, str))
 
-        # for categories with "both" and for the "bicycle_road" - return as is
-        if ("_both" in cat or cat == "bicycle_road"):
-          return cat
-
-        # for categories with "right & left" - revert if needed
-        if not is_reversed:
+        if ("_both" in cat) or (cat in ["no", "bicycle_road"]):
           return cat
         else:
-          sides = ["left", "right"] if cat.split("_")[-1] == "right" else ["right", "left"]
-          for side in sides:
-            cat = " ".join(cat.split(side))
+          # for categories with "right & left" - revert if needed
+          if not is_reversed:
+            return cat
+          else:
+            sides = ["left", "right"] if cat.split("_")[-1] == "right" else ["right", "left"]
+            for side in sides:
+              cat = " ".join(cat.split(side))
 
-          res = cat.split()
-          return res[0] + sides[1] + res[1] + sides[0]
+            res = cat.split()
+            return res[0] + sides[1] + res[1] + sides[0]
 
       for direction in ["forward", "backward"]:
         vals = {x[0]:set_value(x[1], direction) for x in data.iterrows()}
