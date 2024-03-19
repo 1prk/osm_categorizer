@@ -334,6 +334,7 @@ class NetascoreAssessor(Assessor):
                          or x["sidewalk:left"] in ["yes", "separated", "both", "left"]
                          or x["sidewalk:both"] in ["yes", "separated", "both"])
 
+        # maybe we have to explicitly distinguish between when bicycle is empty (null) or when bicycle is explicitly NO or DISMOUNT
         can_bike = x["bicycle"] in ["yes", "designated"]
 
         can_cardrive = x["highway"] in ["motorway", "trunk", "primary", "secondary", "tertiary", "unclassified", "road",
@@ -351,15 +352,27 @@ class NetascoreAssessor(Assessor):
                             or x["cycleway:both"] in ["track"])
 
         #### Begin categories
+        ##infrastructure designated for pedestrians
+        is_pedestrian_right = (is_footpath and not can_bike
+                               or is_path and can_walk_right and not can_bike
+                               or x["highway"] == "steps")
+
+        is_pedestrian_left = (is_footpath and not can_bike
+                              or is_path and can_walk_left and not can_bike
+                              or x["highway"] == "steps")
 
         ##cycleway in its own trace; As already discussed, due to tagging inconsistencies on the user side, we should consider merging this category with "bicycle_way".
         is_cycleway_right = (x["highway"] == "cycleway"
                              or is_track and not can_walk_right
                              or is_track and can_walk_right and is_segregated)
+                            # or (is_track or is_path) and not can_walk_right
+                            # or (is_track or is_path) and can_walk_right and is_segregated)
 
         is_cycleway_left = (x["highway"] == "cycleway"
                             or is_track and not can_walk_left
                             or is_track and can_walk_left and is_segregated)
+                            # or (is_track or is_path) and not can_walk_left
+                            # or (is_track or is_path) and can_walk_left and is_segregated)
 
         ##bicycle_road
         is_bikeroad = (x["bicycle_road"] == "yes"
@@ -444,6 +457,8 @@ class NetascoreAssessor(Assessor):
               return "bicycle_way_right_mit_left"
             elif is_cycleway_left:
               return "bicycle_way_right_cycleway_left"
+            elif is_pedestrian_left:
+              return "bicycle_way_right_pedestrian_left"
             else:
               return "bicycle_way_right_no_left"
 
@@ -458,6 +473,8 @@ class NetascoreAssessor(Assessor):
               return "bicycle_way_left_mit_right"
             elif is_cycleway_right:
               return "bicycle_way_left_cycleway_right"
+            elif is_pedestrian_right:
+              return "bicycle_way_left_pedestrian_right"
             else:
               return "bicycle_way_left_no_right"
 
@@ -473,6 +490,8 @@ class NetascoreAssessor(Assessor):
               return "mixed_way_right_mit_left"
             elif is_cycleway_left:
               return "mixed_way_right_cycleway_left"
+            elif is_pedestrian_left:
+              return "mixed_way_right_pedestrian_left"
             else:
               return "mixed_way_right_no_left"
 
@@ -485,6 +504,8 @@ class NetascoreAssessor(Assessor):
               return "mixed_way_left_mit_right"
             elif is_cycleway_right:
               return "mixed_way_left_cycleway_right"
+            elif is_pedestrian_right:
+              return "mixed_way_left_pedestrian_right"
             else:
               return "mixed_way_left_no_right"
 
@@ -498,6 +519,8 @@ class NetascoreAssessor(Assessor):
               return "bicycle_lane_right_mit_left"
             elif is_cycleway_left:
               return "bicycle_lane_right_cycleway_left"
+            elif is_pedestrian_left:
+              return "bicycle_lane_right_pedestrian_left"
             else:
               return "bicycle_lane_right_no_left"
 
@@ -508,6 +531,8 @@ class NetascoreAssessor(Assessor):
               return "bicycle_lane_left_mit_right"
             elif is_cycleway_right:
               return "bicycle_lane_left_cycleway_right"
+            elif is_pedestrian_right:
+              return "bicycle_lane_left_pedestrian_right"
             else:
               return "bicycle_lane_left_no_right"
 
@@ -519,6 +544,8 @@ class NetascoreAssessor(Assessor):
               return "bus_lane_right_mit_left"
             elif is_cycleway_left:
               return "bus_lane_right_cycleway_left"
+            elif is_pedestrian_left:
+              return "bus_lane_right_pedestrian_left"
             else:
               return "bus_lane_right_no_left"
 
@@ -527,6 +554,8 @@ class NetascoreAssessor(Assessor):
               return "bus_lane_left_mit_right"
             elif is_cycleway_right:
               return "bus_lane_left_cycleway_right"
+            elif is_pedestrian_right:
+              return "bus_lane_left_pedestrian_right"
             else:
               return "bus_lane_left_no_right"
 
@@ -536,12 +565,16 @@ class NetascoreAssessor(Assessor):
               return "mit_road_both"
             elif is_cycleway_left:
               return "mit_road_right_cycleway_left"
+            elif is_pedestrian_left:
+              return "mit_road_right_pedestrian_left"
             else:
               return "mit_road_right_no_left"
 
           elif any(conditions_mit_left):
             if is_cycleway_right:
               return "mit_road_left_cycleway_right"
+            elif is_pedestrian_right:
+              return "mit_road_left_pedestrian_right"
             else:
               return "mit_road_left_no_right"
 
@@ -549,11 +582,26 @@ class NetascoreAssessor(Assessor):
           elif is_cycleway_right:
             if is_cycleway_left:
               return "cycleway_both"
+            elif is_pedestrian_left:
+              return "cycleway_right_pedestrian_left"
             else:
               return "cycleway_right_no_left"
 
           elif is_cycleway_left:
-            return "cycleway_left_no_right"
+            if is_pedestrian_right:
+              return "cycleway_left_pedestrian_right"
+            else:
+              return "cycleway_left_no_right"
+
+          #### 8
+          elif is_pedestrian_right:
+            if is_pedestrian_left:
+              return "pedestrian_both"
+            else:
+              return "pedestrian_right_no_left"
+
+          elif is_pedestrian_left:
+            return "pedestrian_left_no_right"
 
           #### Fallback option: "no"
           else:
