@@ -310,7 +310,7 @@ class NetascoreAssessor(Assessor):
       # Fetch input data.
       labs = ["highway", "cycleway", "cycleway:right", "cycleway:left", "cycleway:both", "segregated", "bicycle",
               "foot", "sidewalk", "sidewalk:right", "sidewalk:left", "sidewalk:both", "bicycle_road", "cyclestreet", "reversed",
-              "traffic_sign"]
+              "traffic_sign", "cycleway:buffer", "cycleway:left:buffer", "cycleway:right:buffer", "cycleway:both:buffer"]
       data = network._get_edge_attributes(network, *labs)
       # Derive attribute values for each street segment from the input data.
       def set_value(x, direction):
@@ -349,24 +349,24 @@ class NetascoreAssessor(Assessor):
         is_not_forbidden = ((x["highway"] in ["cycleway", "track", "path"])
                             and not cannot_bike)
 
-
+        track_lst = ['track', 'opposite_track', 'sidepath']
         is_bikepath_right = (x["highway"] == "cycleway"
-                             or x["cycleway"] in ["track"]
-                             or x["cycleway:right"] in ["track"]
-                             or x["cycleway:both"] in ["track"])
+                             or x["cycleway"] in track_lst
+                             or x["cycleway:right"] in track_lst
+                             or x["cycleway:both"] in track_lst)
         is_bikepath_left = (x["highway"] == "cycleway"
-                            or x["cycleway"] in ["track"]
-                            or x["cycleway:left"] in ["track"]
-                            or x["cycleway:both"] in ["track"])
+                            or x["cycleway"] in track_lst
+                            or x["cycleway:left"] in track_lst
+                            or x["cycleway:both"] in track_lst)
 
         #### Begin categories
         ##infrastructure designated for pedestrians
         is_pedestrian_right = (is_footpath and not can_bike
-                               or is_path and can_walk_right and not can_bike #alternatively: (is_path or is_track)?
+                               or (is_path or is_track) and can_walk_right and not can_bike #alternatively: (is_path or is_track)?
                                or x["highway"] == "steps")
 
         is_pedestrian_left = (is_footpath and not can_bike
-                              or is_path and can_walk_left and not can_bike #alternatively: (is_path or is_track)?
+                              or (is_path or is_track) and can_walk_left and not can_bike #alternatively: (is_path or is_track)?
                               or x["highway"] == "steps")
 
         ##bicycle_road
@@ -375,12 +375,21 @@ class NetascoreAssessor(Assessor):
                        or "244.1" in str(x["traffic_sign"]))
 
         ##lane
-        is_bikelane_right = (x["cycleway"] in ["lane", "shared_lane"]
-                             or x["cycleway:right"] in ["lane", "shared_lane"]
-                             or x["cycleway:both"] in ["lane", "shared_lane"])
-        is_bikelane_left = (x["cycleway"] in ["lane", "shared_lane"]
-                            or x["cycleway:left"] in ["lane", "shared_lane"]
-                            or x["cycleway:both"] in ["lane", "shared_lane"])
+        lane_lst = ["lane", "shared_lane", "opposite_lane", "crossing"]
+        is_bikelane_right = (x["cycleway"] in lane_lst
+                             or x["cycleway:right"] in lane_lst
+                             or x["cycleway:both"] in lane_lst
+                             or pd.notnull(x["cycleway:buffer"])
+                             or pd.notnull(x["cycleway:right:buffer"])
+                             or pd.notnull(x["cycleway:both:buffer"]))
+
+        is_bikelane_left = (x["cycleway"] in lane_lst
+                            or x["cycleway:left"] in lane_lst
+                            or x["cycleway:both"] in lane_lst
+                            or pd.notnull(x["cycleway:buffer"])
+                            or pd.notnull(x["cycleway:left:buffer"])
+                            or pd.notnull(x["cycleway:both:buffer"]))
+
         ##bus
         is_buslane_right = (x["cycleway"] == "share_busway"
                             or x["cycleway:right"] == "share_busway"
@@ -401,7 +410,7 @@ class NetascoreAssessor(Assessor):
           can_bike and (is_track or is_footpath) and is_segregated,
           "240" in str(x["traffic_sign"]),
           "241" in str(x["traffic_sign"]),
-          "237" in str(x["traffic_sign"])
+          "237" in str(x["traffic_sign"]),
         ]
         conditions_b_way_left = [
           # is_bikeroad,
