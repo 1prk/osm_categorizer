@@ -309,7 +309,8 @@ class NetascoreAssessor(Assessor):
     if not obj["data"]:
       # Fetch input data.
       labs = ["highway", "cycleway", "cycleway:right", "cycleway:left", "cycleway:both", "segregated", "bicycle",
-              "foot", "sidewalk", "sidewalk:right", "sidewalk:left", "sidewalk:both", "bicycle_road", "cyclestreet", "reversed"]
+              "foot", "sidewalk", "sidewalk:right", "sidewalk:left", "sidewalk:both", "bicycle_road", "cyclestreet", "reversed",
+              "traffic_sign"]
       data = network._get_edge_attributes(network, *labs)
       # Derive attribute values for each street segment from the input data.
       def set_value(x, direction):
@@ -370,7 +371,8 @@ class NetascoreAssessor(Assessor):
 
         ##bicycle_road
         is_bikeroad = (x["bicycle_road"] == "yes"
-                       or x["cyclestreet"] == "yes")
+                       or x["cyclestreet"] == "yes"
+                       or "244.1" in str(x["traffic_sign"]))
 
         ##lane
         is_bikelane_right = (x["cycleway"] in ["lane", "shared_lane"]
@@ -397,6 +399,9 @@ class NetascoreAssessor(Assessor):
           can_bike and is_track and not can_walk_right,# and not is_footpath,
           can_bike and is_path and is_segregated,
           can_bike and (is_track or is_footpath) and is_segregated,
+          "240" in str(x["traffic_sign"]),
+          "241" in str(x["traffic_sign"]),
+          "237" in str(x["traffic_sign"])
         ]
         conditions_b_way_left = [
           # is_bikeroad,
@@ -406,6 +411,8 @@ class NetascoreAssessor(Assessor):
           can_bike and is_track and not can_walk_left,# and not is_footpath,
           can_bike and is_path and is_segregated,
           can_bike and (is_track or is_footpath) and is_segregated,
+          "240" in str(x["traffic_sign"]),
+          "241" in str(x["traffic_sign"])
         ]
 
         # Second option: "mixed_way"
