@@ -98,7 +98,7 @@ class NetascoreNetwork(Network):
     self._projected_crs = CRS.from_user_input(value)
 
   @classmethod
-  def from_place(cls, query, which_result = None, **kwargs):
+  def from_place(cls, query, custom_filter = None, which_result = None, **kwargs):
     DEFAULT_STREET_KEYS = ox.settings.useful_tags_way
     ox.settings.useful_tags_way = defaults.NETASCORE_STREET_KEYS
     qtype = "place"
@@ -106,6 +106,7 @@ class NetascoreNetwork(Network):
       "query": query,
       "network_type": "all",
       "simplify": False,
+      "custom_filter": custom_filter,
       "which_result": which_result
     }
     obj = cls(ox.graph_from_place(**qkwargs), qtype, qkwargs, **kwargs)

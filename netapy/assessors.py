@@ -308,44 +308,293 @@ class NetascoreAssessor(Assessor):
     # Otherwise derive the attribute values from the network data.
     if not obj["data"]:
       # Fetch input data.
-      labs = ["highway", "cycleway", "bicycle", "foot"]
+      labs = ["highway", "cycleway", "cycleway:right", "cycleway:left", "cycleway:both", "segregated", "bicycle",
+              "foot", "sidewalk", "sidewalk:right", "sidewalk:left", "sidewalk:both", "bicycle_road", "cyclestreet", "reversed"]
       data = network._get_edge_attributes(network, *labs)
       # Derive attribute values for each street segment from the input data.
       def set_value(x, direction):
-        # testi change ML
         # Categorize the street segment.
-        is_bikepath = x["highway"] == "cycleway" or x["cycleway"] == "track"
-        is_footpath = x["highway"] == "footway"
-        is_bikelane = x["cycleway"] in ["lane", "shared_lane"]
-        is_buslane = x["cycleway"] == "share_busway"
-        is_path = x["highway"] = "path"
-        is_track = x["highway"] == "track"
-        can_walk = x["foot"] in ["yes", "designated"]
-        can_bike = x["bicycle"] in ["yes", "designated"]
-        # First option: "bicycle_way"
-        conditions = [
-          is_bikepath and not can_walk,
-          can_bike and not can_walk and not is_footpath,
+        # ToDo: weiter aufgliedern
+        # ACHTUNG: is_reversed Aendert die Strassenseite von Infrastruktur, wenn Kante "reversed" ist
+        # (gut für Darstellung, entspricht dann aber nicht mehr hinterlegtem Wert in OSM)
+        # fuer unveraenderte Benennung is_reversed = false setzen
+        is_reversed = x["reversed"]
+
+        is_segregated = x["segregated"] == "yes"
+        is_footpath = x["highway"] in ["footway", "pedestrian"]
+        is_path = x["highway"] == "path"
+        is_track = x["highway"] in ["track", "service"]
+
+        can_walk_right = (x["foot"] in ["yes", "designated"]
+                          or x["sidewalk"] in ["yes", "separated", "both", "right", "left"]
+                          or x["sidewalk:right"] in ["yes", "separated", "both", "right"]
+                          or x["sidewalk:both"] in ["yes", "separated", "both"])
+        can_walk_left = (x["foot"] in ["yes", "designated"]
+                         or x["sidewalk"] in ["yes", "separated", "both", "right", "left"]
+                         or x["sidewalk:left"] in ["yes", "separated", "both", "left"]
+                         or x["sidewalk:both"] in ["yes", "separated", "both"])
+
+        # maybe we have to explicitly distinguish between when bicycle is empty (null) or when bicycle is explicitly NO or DISMOUNT
+        can_bike = x["bicycle"] in ["yes", "designated"] #should we add permissive?
+        cannot_bike = x["bicycle"] in ["no", "dismount"]
+        #should be changed to (or at least sometimes alternatively used as) "not cannot_bike?". It can be used at least for x["highway"] == "cycleway", where adding bicycle tag seems redundant.
+        #The condition could be than split: (x["highway"] == "cycleway" and not cannot_bike) OR (the_rest and can_bike)
+        #cannot_bike =
+
+        can_cardrive = x["highway"] in ["motorway", "trunk", "primary", "secondary", "tertiary", "unclassified", "road",
+                                        "residential", "living_street",
+                                        "primary_link", "secondary_link", "tertiary_link", 'motorway_link', 'trunk_link']
+
+        is_not_forbidden = ((x["highway"] in ["cycleway", "track", "path"])
+                            and not cannot_bike)
+
+
+        is_bikepath_right = (x["highway"] == "cycleway"
+                             or x["cycleway"] in ["track"]
+                             or x["cycleway:right"] in ["track"]
+                             or x["cycleway:both"] in ["track"])
+        is_bikepath_left = (x["highway"] == "cycleway"
+                            or x["cycleway"] in ["track"]
+                            or x["cycleway:left"] in ["track"]
+                            or x["cycleway:both"] in ["track"])
+
+        #### Begin categories
+        ##infrastructure designated for pedestrians
+        is_pedestrian_right = (is_footpath and not can_bike
+                               or is_path and can_walk_right and not can_bike #alternatively: (is_path or is_track)?
+                               or x["highway"] == "steps")
+
+        is_pedestrian_left = (is_footpath and not can_bike
+                              or is_path and can_walk_left and not can_bike #alternatively: (is_path or is_track)?
+                              or x["highway"] == "steps")
+
+        ##bicycle_road
+        is_bikeroad = (x["bicycle_road"] == "yes"
+                       or x["cyclestreet"] == "yes")
+
+        ##lane
+        is_bikelane_right = (x["cycleway"] in ["lane", "shared_lane"]
+                             or x["cycleway:right"] in ["lane", "shared_lane"]
+                             or x["cycleway:both"] in ["lane", "shared_lane"])
+        is_bikelane_left = (x["cycleway"] in ["lane", "shared_lane"]
+                            or x["cycleway:left"] in ["lane", "shared_lane"]
+                            or x["cycleway:both"] in ["lane", "shared_lane"])
+        ##bus
+        is_buslane_right = (x["cycleway"] == "share_busway"
+                            or x["cycleway:right"] == "share_busway"
+                            or x["cycleway:both"] == "share_busway")
+        is_buslane_left = (x["cycleway"] == "share_busway"
+                           or x["cycleway:left"] == "share_busway"
+                           or x["cycleway:both"] == "share_busway")
+
+        ## bicycle_way
+        # First option: "bicycle_way_right"
+        conditions_b_way_right = [
+          # is_bikeroad,
+          is_bikepath_right and not can_walk_right,
+          is_bikepath_right and is_segregated,
+          can_bike and is_path and not can_walk_right,# and not is_footpath,
+          can_bike and is_track and not can_walk_right,# and not is_footpath,
+          can_bike and is_path and is_segregated,
+          can_bike and (is_track or is_footpath) and is_segregated,
         ]
-        if any(conditions):
-          return "bicycle_way"
+        conditions_b_way_left = [
+          # is_bikeroad,
+          is_bikepath_left and not can_walk_left,
+          is_bikepath_left and is_segregated,
+          can_bike and is_path and not can_walk_left,# and not is_footpath,
+          can_bike and is_track and not can_walk_left,# and not is_footpath,
+          can_bike and is_path and is_segregated,
+          can_bike and (is_track or is_footpath) and is_segregated,
+        ]
+
         # Second option: "mixed_way"
-        conditions = [
-          is_bikepath and can_walk,
-          is_footpath and can_bike,
-          is_path and can_bike and can_walk,
-          is_track and can_bike and can_walk,
+        ##mixed
+        conditions_mixed_right = [
+          is_bikepath_right and can_walk_right and not is_segregated,
+          is_footpath and can_bike and not is_segregated,
+          (is_path or is_track) and can_bike and can_walk_right and not is_segregated,
+          #is_track and can_bike and can_walk_right and not is_segregated,
         ]
-        if any(conditions):
-          return "mixed_way"
-        # Third option: "bicycle_lane"
-        if is_bikelane:
-          return "bicycle_lane"
-        # Fourth option: "bus_lane"
-        if is_buslane:
-          return "bus_lane"
-        # Fallback option: "no"
-        return "no"
+        conditions_mixed_left = [
+          is_bikepath_left and can_walk_left and not is_segregated,
+          is_footpath and can_bike and not is_segregated,
+          (is_path or is_track) and can_bike and can_walk_left and not is_segregated,
+          #is_track and can_bike and can_walk_left and not is_segregated,
+        ]
+
+        # Add. Option: mit_road
+        ##mit
+        conditions_mit_right = [
+          can_cardrive and not is_bikepath_right and not is_bikeroad and not is_footpath and not is_bikelane_right and not is_buslane_right
+          and not is_path and not is_track,
+        ]
+        conditions_mit_left = [
+          can_cardrive and not is_bikepath_left and not is_bikeroad and not is_footpath and not is_bikelane_left and not is_buslane_left
+          and not is_path and not is_track,
+        ]
+
+        #cat = None #the initial assignment, if it's not changed through the course, it means category = "no"
+
+        def get_infra(x):
+          #### 3 # new option: "bicycle_road"
+          if is_bikeroad:
+            return "bicycle_road"
+
+          #### 1
+          elif any(conditions_b_way_right):
+            if any(conditions_b_way_left):
+              return "bicycle_way_both"
+            elif any(conditions_mixed_left):
+              return "bicycle_way_right_mixed_left"
+            elif is_bikelane_left:
+              return "bicycle_way_right_lane_left"
+            elif is_buslane_left:
+              return "bicycle_way_right_bus_left"
+            elif any(conditions_mit_left):
+              return "bicycle_way_right_mit_left"
+            elif is_pedestrian_left:
+              return "bicycle_way_right_pedestrian_left"
+            else:
+              return "bicycle_way_right_no_left"
+
+          elif any(conditions_b_way_left):
+            if any(conditions_mixed_right):
+              return "bicycle_way_left_mixed_right"
+            elif is_bikelane_right:
+              return "bicycle_way_left_lane_right"
+            elif is_buslane_right:
+              return "bicycle_way_left_bus_right"
+            elif any(conditions_mit_right):
+              return "bicycle_way_left_mit_right"
+            elif is_pedestrian_right:
+              return "bicycle_way_left_pedestrian_right"
+            else:
+              return "bicycle_way_left_no_right"
+
+          #### 2
+          elif any(conditions_mixed_right):
+            if any(conditions_mixed_left):
+              return "mixed_way_both"
+            elif is_bikelane_left:
+              return "mixed_way_right_lane_left"
+            elif is_buslane_left:
+              return "mixed_way_right_bus_left"
+            elif any(conditions_mit_left):
+              return "mixed_way_right_mit_left"
+            elif is_pedestrian_left:
+              return "mixed_way_right_pedestrian_left"
+            else:
+              return "mixed_way_right_no_left"
+
+          elif any(conditions_mixed_left):
+            if is_bikelane_right:
+              return "mixed_way_left_lane_right"
+            elif is_buslane_right:
+              return "mixed_way_left_bus_right"
+            elif any(conditions_mit_right):
+              return "mixed_way_left_mit_right"
+            elif is_pedestrian_right:
+              return "mixed_way_left_pedestrian_right"
+            else:
+              return "mixed_way_left_no_right"
+
+          #### 4 # Third option: "bicycle_lane"
+          elif is_bikelane_right:
+            if is_bikelane_left:
+              return "bicycle_lane_both"
+            elif is_buslane_left:
+              return "bicycle_lane_right_bus_left"
+            elif any(conditions_mit_left):
+              return "bicycle_lane_right_mit_left"
+            elif is_pedestrian_left:
+              return "bicycle_lane_right_pedestrian_left"
+            else:
+              return "bicycle_lane_right_no_left"
+
+          elif is_bikelane_left:
+            if is_buslane_right:
+              return "bicycle_lane_left_bus_right"
+            elif any(conditions_mit_right):
+              return "bicycle_lane_left_mit_right"
+            elif is_pedestrian_right:
+              return "bicycle_lane_left_pedestrian_right"
+            else:
+              return "bicycle_lane_left_no_right"
+
+          #### 5 # Fourth option: "bus_lane"
+          elif is_buslane_right:
+            if is_buslane_left:
+              return "bus_lane_both"
+            elif any(conditions_mit_left):
+              return "bus_lane_right_mit_left"
+            elif is_pedestrian_left:
+              return "bus_lane_right_pedestrian_left"
+            else:
+              return "bus_lane_right_no_left"
+
+          elif is_buslane_left:
+            if any(conditions_mit_right):
+              return "bus_lane_left_mit_right"
+            elif is_pedestrian_right:
+              return "bus_lane_left_pedestrian_right"
+            else:
+              return "bus_lane_left_no_right"
+
+          #### 6
+          elif any(conditions_mit_right):
+            if any(conditions_mit_left):
+              return "mit_road_both"
+            elif is_pedestrian_left:
+              return "mit_road_right_pedestrian_left"
+            else:
+              return "mit_road_right_no_left"
+
+          elif any(conditions_mit_left):
+            if is_pedestrian_right:
+              return "mit_road_left_pedestrian_right"
+            else:
+              return "mit_road_left_no_right"
+
+          #### 8
+          elif is_pedestrian_right:
+            if is_pedestrian_left:
+              return "pedestrian_both"
+            else:
+              return "pedestrian_right_no_left"
+
+          elif is_pedestrian_left:
+            return "pedestrian_left_no_right"
+
+          elif is_not_forbidden:
+            return "path_not_forbidden"
+
+          elif x["highway"] == "service":
+            return "service_misc"
+
+          #### Fallback option: "no"
+          else:
+            return "no"
+
+        cat = None
+        cat = get_infra(x)
+        # making sure that the variable cat has been filled
+        assert(isinstance(cat, str))
+
+        if ("_both" in cat) or (cat in ["no", "bicycle_road", "path_not_forbidden", "service_misc"]):
+          return cat
+        else:
+          # for categories with "right & left" - revert if needed
+          if not is_reversed:
+            return cat
+          else:
+            sides = ["left", "right"] if cat.split("_")[-1] == "right" else ["right", "left"]
+            for side in sides:
+              cat = " ".join(cat.split(side))
+
+            res = cat.split()
+            return res[0] + sides[1] + res[1] + sides[0]
+
       for direction in ["forward", "backward"]:
         vals = {x[0]:set_value(x[1], direction) for x in data.iterrows()}
         obj["data"][direction] = vals
@@ -664,7 +913,8 @@ class NetascoreAssessor(Assessor):
         if x["surface"] in tags:
           return "asphalt"
         # Second option: "gravel"
-        tags = ["compacted", "fine_gravel", "gravel", "paving_stones",
+        # ? ToDo ER: nochmals unterteilen?!
+        tags = ["compacted", "fine_gravel", "gravel", "paving_stones", "granite:plates", "concrete:plates", "concrete:lanes",
                 "pebblestone", "ground;gravel", "unpaved"]
         if x["surface"] in tags:
           return "gravel"
@@ -673,7 +923,7 @@ class NetascoreAssessor(Assessor):
         if x["surface"] in tags:
           return "soft"
         # Fourth option: "cobble"
-        tags = ["cobblestone"]
+        tags = ["cobblestone", "unhewn_cobblestone", "sett"]
         if x["surface"] in tags:
           return "cobble"
         # Fallback option: None
