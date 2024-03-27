@@ -195,7 +195,7 @@ class NetascoreNetwork(Network):
     kws = ["west", "south", "east", "north"]
     kwargs = {k:v for k, v in self.query_kwargs.items() if k in kws}
     setattr(self, name, ox.features_from_bbox(tags = query, **kwargs))
-
+# TODO: das auch implementieren
   def _fetch_layer_from_file(self, name, query):
     # TODO: Create workflow to load geometries from OSM file.
     raise NotImplementedError()
