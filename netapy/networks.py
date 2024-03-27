@@ -154,6 +154,7 @@ class NetascoreNetwork(Network):
     ox.settings.useful_tags_way = DEFAULT_STREET_KEYS
     return obj
 
+# TODO: versuchen, das zu implementieren, wenn wir größere Bereiche aus osm.pbf-Dateien extrahieren wollen
   @classmethod
   def from_file(cls, filepath, **kwargs):
     # TODO: Create workflow to load street network from OSM file.
