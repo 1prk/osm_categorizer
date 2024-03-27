@@ -157,8 +157,21 @@ class NetascoreNetwork(Network):
 # TODO: versuchen, das zu implementieren, wenn wir größere Bereiche aus osm.pbf-Dateien extrahieren wollen
   @classmethod
   def from_file(cls, filepath, **kwargs):
-    # TODO: Create workflow to load street network from OSM file.
-    raise NotImplementedError()
+    DEFAULT_STREET_KEYS = ox.settings.useful_tags_way
+    ox.settings.useful_tags_way = defaults.NETASCORE_STREET_KEYS
+    # TODO: Methode finden, um Protobufs in XML umzuwandeln
+    qtype = "xml"
+    qkwargs = {
+      "file_path": filepath,
+      "bidirectional": False,
+      "simplify": False,
+      "retain_all": False,
+      "encoding": 'utf-8'
+    }
+    obj = cls(ox.graph_from_xml(**qkwargs), qtype, qkwargs, **kwargs)
+    ox.settings.useful_tags_way = DEFAULT_STREET_KEYS
+    return obj
+    #raise NotImplementedError()
 
   def fetch_layer(self, name, query):
     getattr(self, f"_fetch_layer_from_{self.query_type}")(name, query)
