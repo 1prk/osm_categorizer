@@ -154,10 +154,24 @@ class NetascoreNetwork(Network):
     ox.settings.useful_tags_way = DEFAULT_STREET_KEYS
     return obj
 
+# TODO: versuchen, das zu implementieren, wenn wir größere Bereiche aus osm.pbf-Dateien extrahieren wollen
   @classmethod
   def from_file(cls, filepath, **kwargs):
-    # TODO: Create workflow to load street network from OSM file.
-    raise NotImplementedError()
+    DEFAULT_STREET_KEYS = ox.settings.useful_tags_way
+    ox.settings.useful_tags_way = defaults.NETASCORE_STREET_KEYS
+    # TODO: Methode finden, um Protobufs in XML umzuwandeln
+    qtype = "xml"
+    qkwargs = {
+      "filepath": filepath,
+      "bidirectional": False,
+      "simplify": False,
+      "retain_all": False,
+      "encoding": 'utf-8'
+    }
+    obj = cls(ox.graph_from_xml(**qkwargs), qtype, qkwargs, **kwargs)
+    ox.settings.useful_tags_way = DEFAULT_STREET_KEYS
+    return obj
+    #raise NotImplementedError()
 
   def fetch_layer(self, name, query):
     getattr(self, f"_fetch_layer_from_{self.query_type}")(name, query)
@@ -181,10 +195,13 @@ class NetascoreNetwork(Network):
     kws = ["west", "south", "east", "north"]
     kwargs = {k:v for k, v in self.query_kwargs.items() if k in kws}
     setattr(self, name, ox.features_from_bbox(tags = query, **kwargs))
-
+# TODO: das auch implementieren
   def _fetch_layer_from_file(self, name, query):
+    kws = ["polygon", "encoding"]
+    kwargs = {k:v for k, v in self.query_kwargs.items() if k in kws}
+    setattr(self, name, ox.features_from_xml(tags = query, **kwargs))
     # TODO: Create workflow to load geometries from OSM file.
-    raise NotImplementedError()
+    #raise NotImplementedError()
 
   def fetch_buildings(self):
     self.fetch_layer("buildings", defaults.NETASCORE_BUILDINGS_QUERY)

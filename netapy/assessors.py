@@ -12,7 +12,13 @@ from netapy import defaults, utils
 from netapy.profiles import NetascoreProfile
 from netapy.exceptions import NetapyNetworkError
 
+ENABLE_LOGGING = True
 logger = logging.getLogger(__name__)
+
+if ENABLE_LOGGING:
+  logging.basicConfig(level=logging.DEBUG)
+else:
+  logging.basicConfig(level=logging.CRITICAL)
 
 class Assessor():
 
@@ -27,6 +33,7 @@ class Assessor():
 class NetascoreAssessor(Assessor):
 
   def __init__(self, profile, naming_config = None, fetch_layers = True):
+    #logging.info('Initializing NetascoreAssessor.')
     self.profile = profile
     if naming_config is None:
       self.naming_config = defaults.NETASCORE_NAMING_CONFIG
@@ -71,6 +78,7 @@ class NetascoreAssessor(Assessor):
     self._fetch_layers = value
 
   def run(self, network, **config):
+    #logging.info('Running the assessor.')
     return self.generate_index(network, **config)
 
   def clean(self, network, **config):
@@ -81,6 +89,7 @@ class NetascoreAssessor(Assessor):
                      read_subs = None, write_subs = None, read_attrs = None,
                      write_attrs = None, ignore_nodata = False,
                      compute_robustness = False):
+    #logging.info('Generating index.')
     obj = self._init_metadata(kind = "index", directed = True)
     # Read values from the network if read = True and the index exists.
     if read:
@@ -116,6 +125,7 @@ class NetascoreAssessor(Assessor):
 
   def generate_subindices(self, network, read = False, write = True,
                           read_attrs = None, write_attrs = None):
+    #logging.info('Generating subindices.')
     out = {}
     config = {
       "read": read,
@@ -132,6 +142,7 @@ class NetascoreAssessor(Assessor):
   def generate_subindex(self, label, network, read = False, write = True,
                         read_attrs = None, write_attrs = None, clear_cache = True):
     obj = self._init_metadata(label, kind = "index", directed = None)
+    #logging.info('Fetching layers.')
     # Read values from the network if read = True and the index exists.
     if read:
       self._read_from_network(obj, network)
@@ -192,9 +203,11 @@ class NetascoreAssessor(Assessor):
     return obj
 
   def generate_attribute(self, label, network, read = False, write = True, **kwargs):
+    #logging.info('Generating attributes.')
     return getattr(self, f"derive_{label}")(network, read, write, **kwargs)
 
   def derive_access_car(self, network, read = False, write = True, **kwargs):
+    #logging.info('Assessing car accessibilty.')
     label = "access_car"
     obj = self._init_metadata(label, kind = "attribute", directed = True)
     # Read values from the network if read = True and the attribute exists.
@@ -215,6 +228,7 @@ class NetascoreAssessor(Assessor):
     return obj
 
   def derive_access_bicycle(self, network, read = False, write = True, **kwargs):
+    #logging.info('Assessing bicycle accessibilty.')
     label = "access_bicycle"
     obj = self._init_metadata(label, kind = "attribute", directed = True)
     # Read values from the network if read = True and the attribute exists.
@@ -235,6 +249,7 @@ class NetascoreAssessor(Assessor):
     return obj
 
   def derive_access_pedestrian(self, network, read = False, write = True, **kwargs):
+    #logging.info('Assessing pedestrian accessibilty.')
     label = "access_pedestrian"
     obj = self._init_metadata(label, kind = "attribute", directed = True)
     # Read values from the network if read = True and the attribute exists.
@@ -255,6 +270,7 @@ class NetascoreAssessor(Assessor):
     return obj
 
   def derive_bridge(self, network, read = False, write = True, **kwargs):
+    #logging.info('Assessing bridges.')
     label = "bridge"
     obj = self._init_metadata(label, kind = "attribute", directed = False)
     # Read values from the network if read = True and the attribute exists.
@@ -270,6 +286,7 @@ class NetascoreAssessor(Assessor):
     return obj
 
   def derive_stairs(self, network, read = False, write = True, **kwargs):
+    #logging.info('Assessing stairs.')
     label = "stairs"
     obj = self._init_metadata(label, kind = "attribute", directed = False)
     # Read values from the network if read = True and the attribute exists.
@@ -285,6 +302,7 @@ class NetascoreAssessor(Assessor):
     return obj
 
   def derive_tunnel(self, network, read = False, write = True, **kwargs):
+    #logging.info('Assessing tunnels.')
     label = "tunnel"
     obj = self._init_metadata(label, kind = "attribute", directed = False)
     # Read values from the network if read = True and the attribute exists.
@@ -300,6 +318,7 @@ class NetascoreAssessor(Assessor):
     return obj
 
   def derive_bicycle_infrastructure(self, network, read = False, write = True, **kwargs):
+    #logging.info('Derive cycling infrastructure.')
     label = "bicycle_infrastructure"
     obj = self._init_metadata(label, kind = "attribute", directed = True)
     # Read values from the network if read = True and the attribute exists.
@@ -621,6 +640,7 @@ class NetascoreAssessor(Assessor):
 
   def derive_pedestrian_infrastructure(self, network, read = False, write = True,
                                        read_deps = None, write_deps = None, **kwargs):
+    logging.info('Deriving pedestrian infrastructre.')
     label = "pedestrian_infrastructure"
     obj = self._init_metadata(label, kind = "attribute", directed = True)
     # Read values from the network if read = True and the attribute exists.
@@ -680,6 +700,7 @@ class NetascoreAssessor(Assessor):
     return obj
 
   def derive_gradient(self, network, read = False, write = True, **kwargs):
+    logging.info('Deriving gradients.')
     label = "gradient"
     obj = self._init_metadata(label, kind = "attribute", directed = True)
     # Read values from the network if read = True and the attribute exists.
@@ -724,6 +745,7 @@ class NetascoreAssessor(Assessor):
     return obj
 
   def derive_max_speed(self, network, read = False, write = True, **kwargs):
+    #logging.info('Deriving maximum speeds.')
     label = "max_speed"
     obj = self._init_metadata(label, kind = "attribute", directed = True)
     # Read values from the network if read = True and the attribute exists.
@@ -762,6 +784,7 @@ class NetascoreAssessor(Assessor):
     return obj
 
   def derive_road_category(self, network, read = False, write = True, **kwargs):
+    #logging.info('Deriving Road category.')
     label = "road_category"
     obj = self._init_metadata(label, kind = "attribute", directed = False)
     # Read values from the network if read = True and the attribute exists.
