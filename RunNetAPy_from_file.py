@@ -43,6 +43,22 @@ class ProcessOsmData():
             print(f"Command failed with return code {return_code}")
         return output_file  # gibt den pfad und dateinamen aus
 
+    def osmium_tagsfilter(self, region, osm_file, output_dir):
+        output_file = f"{output_dir}/{region}_highway.osm.pbf"
+        command = ["osmium", "tags-filter", "-o", output_file, osm_file, "nw/highway"]  # created a list of all command arguments
+        print(' '.join(command))
+        process = subprocess.Popen([self.bat_path] + command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        stdout, stderr = process.communicate()
+
+        if process.returncode == 0:
+            print("Command executed successfully")
+            print("Output:\n", stdout.decode())
+        else:
+            print(f"Command failed with return code {process.returncode}")
+            print("Error output:\n", stderr.decode())
+        return output_dir, output_file  # gibt den pfad und die datei aus
+
     # hier wird die extrahierte *.osm.pbf-datei aus der funkton osmium_extract() in eine osm-datei umgewandelt
     def osmium_pbf2xml(self, region, osm_file, output_dir):
         '''
@@ -82,7 +98,8 @@ for geom in bbox_gdf.geometry:
 for bbox, reg in zip(bbox_array, region):
     osmium_xtract = oe.osmium_extract(bbox, r'C:\Users\Porojkow\Documents\Projekte\2023_RadSim\05_Arbeitsunterlagen\AP 3\Verkehrsnetz Darstellung\pilotkommunen\germany-latest.osm.pbf',
                                       r'C:\Users\Porojkow\Documents\Projekte\2023_RadSim\05_Arbeitsunterlagen\AP 3\Verkehrsnetz Darstellung\pilotkommunen\{}_osm.osm.pbf'.format(reg))
-    osmium_xml = oe.osmium_pbf2xml(reg, osmium_xtract, r'C:\Users\Porojkow\Documents\Projekte\2023_RadSim\05_Arbeitsunterlagen\AP 3\Verkehrsnetz Darstellung\pilotkommunen')
+    osmium_filter_path, osmium_filter_file = oe.osmium_tagsfilter(reg, osmium_xtract, r'C:\Users\Porojkow\Documents\Projekte\2023_RadSim\05_Arbeitsunterlagen\AP 3\Verkehrsnetz Darstellung\pilotkommunen')
+    osmium_xml = oe.osmium_pbf2xml(reg, osmium_filter_file, r'C:\Users\Porojkow\Documents\Projekte\2023_RadSim\05_Arbeitsunterlagen\AP 3\Verkehrsnetz Darstellung\pilotkommunen')
 
 files = glob.glob(r'C:\Users\Porojkow\Documents\Projekte\2023_RadSim\05_Arbeitsunterlagen\AP 3\Verkehrsnetz Darstellung\pilotkommunen\*.bz2')
 # erstmal mit einer kleinen Datei testen, z.B. Dresden
