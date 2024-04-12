@@ -450,7 +450,9 @@ NETASCORE_STREET_KEYS = [
   "sidewalk:both",
   "sidewalk:left",
   "sidewalk:right",
-  "segregated"
+  "segregated",
+  "indoor",
+  "tram"
 ]
 
 NETASCORE_BUILDINGS_QUERY = {

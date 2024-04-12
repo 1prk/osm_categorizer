@@ -125,8 +125,10 @@ for reg, f in zip(region, files):
     # you can convert MultiDiGraph to/from GeoPandas GeoDataFrames
     # TODO: auf Dask ausweichen bei großen Gebieten (z.B. Bundesländer)
     gdf_nodes, gdf_edges = ox.utils_graph.graph_to_gdfs(assessed)
-    G = ox.utils_graph.graph_from_gdfs(gdf_nodes, gdf_edges, graph_attrs=assessed.graph)
+    filepath = f"./data/RadinfraOSM_hw_{reg}_infra09_reversed_edges.gpkg"
+    gdf_edges.to_file(filepath, driver="GPKG")
+    #G = ox.utils_graph.graph_from_gdfs(gdf_nodes, gdf_edges, graph_attrs=assessed.graph)
     # save graph as a geopackage
     # bei Aenderungen in Abfrage zu Radinfrastruktur habe ich jeweils die Nummer erhoeht.
     # TODO: fiona-kompabilität
-    ox.io.save_graph_geopackage(G, filepath=f"./data/RadinfraOSM_{reg}_infra09_reversed.gpkg")
+    #ox.io.save_graph_geopackage(G, filepath=f"./data/RadinfraOSM_hw_{reg}_infra09_reversed.gpkg")
