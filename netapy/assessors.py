@@ -360,7 +360,7 @@ class NetascoreAssessor(Assessor):
         # maybe we have to explicitly distinguish between when bicycle is empty (null) or when bicycle is explicitly NO or DISMOUNT
         can_bike = x["bicycle"] in ["yes", "designated"] #should we add permissive?
         cannot_bike = (x["bicycle"] in ["no", "dismount"] or
-                       x["highway"] in ['corridor'])
+                       x["highway"] in ['corridor', 'motorway', 'motorway_link', 'trunk', 'trunk_link'])
 
         #should be changed to (or at least sometimes alternatively used as) "not cannot_bike?". It can be used at least for x["highway"] == "cycleway", where adding bicycle tag seems redundant.
         #The condition could be than split: (x["highway"] == "cycleway" and not cannot_bike) OR (the_rest and can_bike)
