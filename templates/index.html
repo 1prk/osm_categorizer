@@ -105,6 +105,8 @@
 </head>
 <body>
 <h1>OSM-Infrastrukturkategorisierung</h1>
+<h2>Was passiert hier?</h2>
+<p>Das ist eine Webapp, mit der über einen beliebigen Punkt auf der Karte und einem Radius OSM-Daten bezogen werden und nach der Radverkehrskategorisierung als Geopackage ausgegeben wird.</p>
     <div class="spinner-container" id="spinner">
       <div class="spinner"></div>
       <div id="spinner-message"></div>
@@ -118,6 +120,18 @@
             <label for="filename">Save as:</label>
             <input type="text" id="filename" name="filename" value="RadinfraOSM_test_infra09_reversed">
             <input type="submit" value="Get Network">
+            <a href="#" id="download_link" style="display: none; text-decoration: none;" download>
+                <button type="button" style="background-color: #4CAF50;
+                               border: none;
+                               color: white;
+                               text-align: center;
+                               text-decoration: none;
+                               display: inline-block;
+                               font-size: 16px;
+                               margin: 4px 2px;
+                               cursor: pointer;
+                               padding: 15px 32px;">Download File</button>
+            </a>
         </form>
         <script>
             var slider = document.getElementById("dist");

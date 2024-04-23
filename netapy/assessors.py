@@ -343,6 +343,7 @@ class NetascoreAssessor(Assessor):
 
         is_segregated = x["segregated"] == "yes"
         is_footpath = x["highway"] in ["footway", "pedestrian"]
+        use_sidepath = x["bicycle"] in ['use_sidepath']
         is_indoor = x['indoor'] == 'yes'
         is_accessible = x['access'] == 'no'
         is_path = x["highway"] == "path"
@@ -359,7 +360,7 @@ class NetascoreAssessor(Assessor):
 
         # maybe we have to explicitly distinguish between when bicycle is empty (null) or when bicycle is explicitly NO or DISMOUNT
         can_bike = x["bicycle"] in ["yes", "designated"] #should we add permissive?
-        cannot_bike = (x["bicycle"] in ["no", "dismount"] or
+        cannot_bike = (x["bicycle"] in ["no", "dismount", 'use_sidepath'] or
                        x["highway"] in ['corridor', 'motorway', 'motorway_link', 'trunk', 'trunk_link'])
 
         #should be changed to (or at least sometimes alternatively used as) "not cannot_bike?". It can be used at least for x["highway"] == "cycleway", where adding bicycle tag seems redundant.
@@ -446,11 +447,11 @@ class NetascoreAssessor(Assessor):
         ##mit
         conditions_mit_right = [
           can_cardrive and not is_bikepath_right and not is_bikeroad and not is_footpath and not is_bikelane_right and not is_buslane_right
-          and not is_path and not is_track,
+          and not is_path and not is_track and not cannot_bike,
         ]
         conditions_mit_left = [
           can_cardrive and not is_bikepath_left and not is_bikeroad and not is_footpath and not is_bikelane_left and not is_buslane_left
-          and not is_path and not is_track,
+          and not is_path and not is_track and not cannot_bike,
         ]
 
         #cat = None #the initial assignment, if it's not changed through the course, it means category = "no"

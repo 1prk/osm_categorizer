@@ -32,7 +32,7 @@ slider.oninput = function() {
 output.innerHTML = this.value;
 }
 
-networkForm.onsubmit = function(e){
+networkForm.onsubmit = function(e) {
     e.preventDefault();
 
     // Show the spinner
@@ -51,26 +51,34 @@ networkForm.onsubmit = function(e){
     }
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
     xhr.send("location_point=" + encodeURIComponent(document.getElementById('location_point').value)
-    + "&dist=" + encodeURIComponent(document.getElementById('dist').value)
-    + "&filename=" + encodeURIComponent(document.getElementById('filename').value));
+        + "&dist=" + encodeURIComponent(document.getElementById('dist').value)
+        + "&filename=" + encodeURIComponent(document.getElementById('filename').value));
     xhr.onload = function (e) {
         // Hide the spinner
         document.getElementById('spinner').style.display = 'none';
         document.getElementById('spinner-message').textContent = "";
+
         if (xhr.readyState === 4) {
             if (xhr.status === 200) {
                 console.log(xhr.responseText);
+                var downloadLink = document.getElementById("download_link");
+                downloadLink.style.display = "block"; // make the link visible
+                downloadLink.href = "/data/" + encodeURIComponent(document.getElementById("filename").value) + ".gpkg";
+                // download when done
+                downloadLink.download = document.getElementById("filename").value + ".gpkg";
+                var message = "Network loading completed! Click the link to download.";
+                document.getElementById("spinner-message").textContent = message;
             } else {
                 console.error(xhr.statusText);
             }
         }
     }
-    xhr.onerror = function(e) {
-    // Handles network errors
-    console.error('An error occurred while performing the request.');
-    // Hide the spinner
-    document.getElementById('spinner').style.display = 'none';
-    // Clear the message
-    document.getElementById('spinner-message').textContent = "";
+    xhr.onerror = function (e) {
+        // Handles network errors
+        console.error('An error occurred while performing the request.');
+        // Hide the spinner
+        document.getElementById('spinner').style.display = 'none';
+        // Clear the message
+        document.getElementById('spinner-message').textContent = "An error occurred. Please try again.";
+    }
 }
-};

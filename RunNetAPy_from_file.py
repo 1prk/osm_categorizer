@@ -6,6 +6,12 @@ import numpy as np
 import geopandas as gpd
 import glob
 
+#multithreading!
+from concurrent.futures import ThreadPoolExecutor
+from tqdm import tqdm
+
+
+
 
 # fasse die osmium-funktionen in einer klasse zusammen
 # da osmium unter windows 10 am besten über OsGeo4W funktionert (was mit QGIS kommt)
@@ -132,3 +138,24 @@ for reg, f in zip(region, files):
     # bei Aenderungen in Abfrage zu Radinfrastruktur habe ich jeweils die Nummer erhoeht.
     # TODO: fiona-kompabilität
     #ox.io.save_graph_geopackage(G, filepath=f"./data/RadinfraOSM_hw_{reg}_infra09_reversed.gpkg")
+
+def process_file(region_file):
+    reg, f = region_file
+    print(f)
+    network = netapy.networks.NetascoreNetwork.from_file(filepath=f)
+
+    akwargs = {
+        'inplace': False,
+        'ignore_nodata': True,
+        'compute_robustness': True
+    }
+    assessor = netapy.assessors.NetascoreAssessor(profile="bike")
+    assessed = network.assess(assessor, **akwargs)
+
+    gdf_nodes, gdf_edges = ox.utils_graph.graph_to_gdfs(assessed)
+    filepath = f"./data/RadinfraOSM_hw_{reg}_infra09_reversed_edges.gpkg"
+    gdf_edges.to_file(filepath, driver="GPKG")
+
+with ThreadPoolExecutor(max_workers=4) as executor:
+    # We need to pass tuples (file, region) to executor.map(), so we zip files and regions
+    list(tqdm(executor.map(process_file, zip(region, files)), total=len(files)))
