@@ -10,8 +10,8 @@ import osmnx as ox
 # Eingabe OSM-IDs - funktioniert leider nicht
 #network = netapy.networks.NetascoreNetwork.from_place(query="Dresden", custom_filter='["::type"="way"]["::id"~"1058293583|213731284"]')
 #Eingabe Punkt
-location_point = (51.05817, 13.753634)
-network = netapy.networks.NetascoreNetwork.from_point(point=location_point, dist=1000)
+location_point = (51.3442, 12.3804)
+network = netapy.networks.NetascoreNetwork.from_point(point=location_point, dist=500)
 
 #ox.plot_graph(network, bgcolor = "white", edge_color = "orange", node_color = "grey", node_size = 2)
 
@@ -28,7 +28,9 @@ assessed = network.assess(assessor, inplace = False, ignore_nodata = True, compu
 
 # you can convert MultiDiGraph to/from GeoPandas GeoDataFrames
 gdf_nodes, gdf_edges = ox.utils_graph.graph_to_gdfs(assessed)
-G = ox.utils_graph.graph_from_gdfs(gdf_nodes, gdf_edges, graph_attrs=assessed.graph)
+#gdf_edges[gdf_edges['osmid'] == 352861381]['bicycle_infrastructure:forward']
+gdf_edges.to_file("./data/RadinfraOSM_test_infra09_reversed.gpkg", driver="GPKG")
+#G = ox.utils_graph.graph_from_gdfs(gdf_nodes, gdf_edges, graph_attrs=assessed.graph)
 # save graph as a geopackage
 # bei Aenderungen in Abfrage zu Radinfrastruktur habe ich jeweils die Nummer erhoeht.
-ox.io.save_graph_geopackage(G, filepath="./data/RadinfraOSM_test_infra09_reversed.gpkg")
+#ox.io.save_graph_geopackage(G, filepath="./data/RadinfraOSM_test_infra09_reversed.gpkg")
