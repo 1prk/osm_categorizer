@@ -317,7 +317,7 @@ class NetascoreAssessor(Assessor):
         self._write_to_network(obj, network)
     return obj
 
-  def derive_bicycle_infrastructure(self, network, read = False, write = True, **kwargs):
+  def derive_bicycle_infrastructure(self, network, read = False, write = True, debug=False, **kwargs):
     #logging.info('Derive cycling infrastructure.')
     label = "bicycle_infrastructure"
     obj = self._init_metadata(label, kind = "attribute", directed = True)
@@ -329,7 +329,7 @@ class NetascoreAssessor(Assessor):
       # Fetch input data.
       labs = ["highway", "cycleway", "segregated", "bicycle",
               "foot", "sidewalk", "bicycle_road", "cyclestreet",
-              "reversed", "indoor", "access", "tram",
+              "reversed", "indoor", "access", "tram", 'traffic_sign', 'traffic_sign:forward',
               'cycleway:left', 'cycleway:right', 'cycleway:both',
               'sidewalk:left', 'sidewalk:right', 'sidewalk:both']
       nested_labs_prefix = ['cycleway:left', 'cycleway:right', 'cycleway:both',
@@ -376,8 +376,12 @@ class NetascoreAssessor(Assessor):
         cannot_bike = (x["bicycle"] in ["no", "dismount", 'use_sidepath'] or
                        x["highway"] in ['corridor', 'motorway', 'motorway_link', 'trunk', 'trunk_link'] or
                        x["access"] in ['customers'])
-        is_obligated_segregated = (('traffic_sign' in x.keys() and '240' in x['traffic_sign']) or ('traffic_sign' in x.keys() and '241' in x['traffic_sign']))
-        is_obligated_painted = (('traffic_sign' in x.keys() and '237' in x['traffic_sign']))
+        is_obligated_segregated = (
+                ('traffic_sign' in x.keys() and isinstance(x['traffic_sign'], str) and '241' in x['traffic_sign'])
+                or ('traffic_sign:forward' in x.keys() and isinstance(x['traffic_sign:forward'], str) and '241' in x[
+          'traffic_sign:forward'])
+        )
+        is_obligated_painted = ('traffic_sign' in x.keys() and '237' in x['traffic_sign'])
 
         #should be changed to (or at least sometimes alternatively used as) "not cannot_bike?". It can be used at least for x["highway"] == "cycleway", where adding bicycle tag seems redundant.
         #The condition could be than split: (x["highway"] == "cycleway" and not cannot_bike) OR (the_rest and can_bike)
@@ -446,9 +450,10 @@ class NetascoreAssessor(Assessor):
           can_bike and is_track and not can_walk_right,# and not is_footpath,
           can_bike and is_path and is_segregated,
           can_bike and (is_track or is_footpath) and is_segregated,
-          (x["bicycle"] == "designated" and x["foot"] == "designated"),
-          (x.get("cycleway:right:bicycle") == "designated" and x.get("sidewalk:right:foot") == "designated"),
+          (x["bicycle"] == "designated" and x["foot"] == "designated" and is_segregated),
+          (x.get("cycleway:right:bicycle") == "designated" and x.get("sidewalk:right:foot") == "designated" and is_segregated),
           (x.get("cycleway:bicycle") == "designated" and x.get("sidewalk:foot") == "designated")
+
         ]
         conditions_b_way_left = [
           # is_bikeroad,
@@ -459,8 +464,8 @@ class NetascoreAssessor(Assessor):
           can_bike and is_path and is_segregated,
           can_bike and (is_track or is_footpath) and is_segregated,
           can_bike and is_obligated_segregated,
-          (x["bicycle"] == "designated" and x["foot"] == "designated"),
-          (x.get("cycleway:left:bicycle") == "designated" and x.get("sidewalk:left:foot") == "designated"),
+          (x["bicycle"] == "designated" and x["foot"] == "designated" and is_segregated),
+          (x.get("cycleway:left:bicycle") == "designated" and x.get("sidewalk:left:foot") == "designated" and is_segregated),
           (x.get("cycleway:bicycle") == "designated" and x.get("sidewalk:foot") == "designated")
         ]
 
@@ -504,6 +509,44 @@ class NetascoreAssessor(Assessor):
           and not is_path and not is_track and not cannot_bike,
         ]
 
+        if debug:
+          data = {
+            'is_reversed': is_reversed,
+            'is_segregated': is_segregated,
+            'is_footpath': is_footpath,
+            'use_sidepath': use_sidepath,
+            'is_indoor': is_indoor,
+            'is_accessible': is_accessible,
+            'is_path': is_path,
+            'is_track': is_track,
+            'can_walk_right': can_walk_right,
+            'can_walk_left': can_walk_left,
+            'can_bike': can_bike,
+            'cannot_bike': cannot_bike,
+            'is_obligated_segregated': is_obligated_segregated,
+            'is_obligated_painted': is_obligated_painted,
+            'can_cardrive': can_cardrive,
+            'is_not_forbidden': is_not_forbidden,
+            'is_bikepath_right': is_bikepath_right,
+            'is_bikepath_left': is_bikepath_left,
+            'is_pedestrian_right': is_pedestrian_right,
+            'is_pedestrian_left': is_pedestrian_left,
+            "is_bikeroad": is_bikeroad,
+            "is_bikelane_right": is_bikelane_right,
+            "is_bikelane_left": is_bikelane_left,
+            "is_buslane_right": is_buslane_right,
+            "is_buslane_left": is_buslane_left,
+            "conditions_b_way_right": conditions_b_way_right,
+            "conditions_b_way_left": conditions_b_way_left,
+            "conditions_p_way_right": conditions_p_way_right,
+            "conditions_p_way_left": conditions_p_way_left,
+            "conditions_mixed_right": conditions_mixed_right,
+            "conditions_mixed_left": conditions_mixed_left,
+            "conditions_mit_right": conditions_mit_right,
+            "conditions_mit_left": conditions_mit_left
+          }
+          print(data)
+
         #cat = None #the initial assignment, if it's not changed through the course, it means category = "no"
 
         def get_infra(x):
@@ -541,6 +584,33 @@ class NetascoreAssessor(Assessor):
               return "bicycle_way_left_pedestrian_right"
             else:
               return "bicycle_way_left_no_right"
+
+          #### 2
+          elif any(conditions_mixed_right):
+            if any(conditions_mixed_left):
+              return "mixed_way_both"
+            elif is_bikelane_left:
+              return "mixed_way_right_lane_left"
+            elif is_buslane_left:
+              return "mixed_way_right_bus_left"
+            elif any(conditions_mit_left):
+              return "mixed_way_right_mit_left"
+            elif is_pedestrian_left:
+              return "mixed_way_right_pedestrian_left"
+            else:
+              return "mixed_way_right_no_left"
+
+          elif any(conditions_mixed_left):
+            if is_bikelane_right:
+              return "mixed_way_left_lane_right"
+            elif is_buslane_right:
+              return "mixed_way_left_bus_right"
+            elif any(conditions_mit_right):
+              return "mixed_way_left_mit_right"
+            elif is_pedestrian_right:
+              return "mixed_way_left_pedestrian_right"
+            else:
+              return "mixed_way_left_no_right"
 
           #### 4 # Third option: "bicycle_lane"
           elif is_bikelane_right:
@@ -584,32 +654,7 @@ class NetascoreAssessor(Assessor):
             else:
               return "bus_lane_left_no_right"
 
-          #### 2
-          elif any(conditions_mixed_right):
-            if any(conditions_mixed_left):
-              return "mixed_way_both"
-            elif is_bikelane_left:
-              return "mixed_way_right_lane_left"
-            elif is_buslane_left:
-              return "mixed_way_right_bus_left"
-            elif any(conditions_mit_left):
-              return "mixed_way_right_mit_left"
-            elif is_pedestrian_left:
-              return "mixed_way_right_pedestrian_left"
-            else:
-              return "mixed_way_right_no_left"
 
-          elif any(conditions_mixed_left):
-            if is_bikelane_right:
-              return "mixed_way_left_lane_right"
-            elif is_buslane_right:
-              return "mixed_way_left_bus_right"
-            elif any(conditions_mit_right):
-              return "mixed_way_left_mit_right"
-            elif is_pedestrian_right:
-              return "mixed_way_left_pedestrian_right"
-            else:
-              return "mixed_way_left_no_right"
 
           #### 6
           elif any(conditions_mit_right):

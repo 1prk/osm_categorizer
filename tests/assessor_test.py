@@ -20,7 +20,7 @@ class TestNetascoreAssessorSetValuesMethod(unittest.TestCase):
         #test erfolt mit mehreren edge-cases anhand der OSM-way-id
         # 1: muss bicycle_way_mit_
         # 2: muss bicycle_way_mit
-        ways = [93337908, 762904350, 28051347]
+        ways = [93337908, 1251147753]
         ways_str = ','.join(str(x) for x in ways)
         query = f'way(id:{ways_str});out;'
         result = api.query(query)
@@ -52,7 +52,7 @@ class TestNetascoreAssessorSetValuesMethod(unittest.TestCase):
         # Create a dictionary of test values
 
         # hypothetical method that sets and returns conditions_p_way_left list
-        result = self.assessor.derive_bicycle_infrastructure(self.network)
+        result = self.assessor.derive_bicycle_infrastructure(self.network, debug=True)
         pprint.pprint(result, indent=4, width=1)
 
         expected_results = '' # what you expect the results to be

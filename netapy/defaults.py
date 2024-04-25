@@ -455,6 +455,7 @@ NETASCORE_STREET_KEYS = [
   "indoor",
   "tram",
   "traffic_sign",
+  "traffic_sign:forward",
   "cycleway:bicycle",
   'cycleway:left:bicycle',
   'cycleway:left:lane',
