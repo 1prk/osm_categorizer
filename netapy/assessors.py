@@ -357,7 +357,7 @@ class NetascoreAssessor(Assessor):
         is_indoor = x['indoor'] == 'yes'
         is_accessible = x['access'] == 'no'
         is_path = x["highway"] == "path"
-        is_track = x["highway"] in ["track", "service"]
+        is_track = x["highway"] in ["track"]
 
         can_walk_right = (x["foot"] in ["yes", "designated"]
                           or any(key for key, value in x.items() if 'right:foot' in key and value in ['yes', 'designated'])
@@ -381,7 +381,7 @@ class NetascoreAssessor(Assessor):
                 or ('traffic_sign:forward' in x.keys() and isinstance(x['traffic_sign:forward'], str) and '241' in x[
           'traffic_sign:forward'])
         )
-        is_obligated_painted = ('traffic_sign' in x.keys() and '237' in x['traffic_sign'])
+        #is_obligated_painted = ('traffic_sign' in x.keys() and '237' in x['traffic_sign'])
 
         #should be changed to (or at least sometimes alternatively used as) "not cannot_bike?". It can be used at least for x["highway"] == "cycleway", where adding bicycle tag seems redundant.
         #The condition could be than split: (x["highway"] == "cycleway" and not cannot_bike) OR (the_rest and can_bike)
@@ -469,20 +469,6 @@ class NetascoreAssessor(Assessor):
           (x.get("cycleway:bicycle") == "designated" and x.get("sidewalk:foot") == "designated")
         ]
 
-        # Another option: "bicycle_painted_right"
-        conditions_p_way_right = [
-          is_bikelane_right and not can_walk_right,
-          is_bikelane_right and not use_sidepath,
-          can_bike and can_cardrive or is_obligated_painted # and not is_footpath,
-
-        ]
-
-        conditions_p_way_left = [
-          is_bikelane_left and not can_walk_right,
-          is_bikelane_left and not use_sidepath,
-          can_bike and can_cardrive or is_obligated_painted# and not is_footpath,
-        ]
-
         # Second option: "mixed_way"
         ##mixed
         conditions_mixed_right = [
@@ -524,7 +510,6 @@ class NetascoreAssessor(Assessor):
             'can_bike': can_bike,
             'cannot_bike': cannot_bike,
             'is_obligated_segregated': is_obligated_segregated,
-            'is_obligated_painted': is_obligated_painted,
             'can_cardrive': can_cardrive,
             'is_not_forbidden': is_not_forbidden,
             'is_bikepath_right': is_bikepath_right,
@@ -538,8 +523,6 @@ class NetascoreAssessor(Assessor):
             "is_buslane_left": is_buslane_left,
             "conditions_b_way_right": conditions_b_way_right,
             "conditions_b_way_left": conditions_b_way_left,
-            "conditions_p_way_right": conditions_p_way_right,
-            "conditions_p_way_left": conditions_p_way_left,
             "conditions_mixed_right": conditions_mixed_right,
             "conditions_mixed_left": conditions_mixed_left,
             "conditions_mit_right": conditions_mit_right,

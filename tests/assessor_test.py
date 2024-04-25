@@ -20,7 +20,7 @@ class TestNetascoreAssessorSetValuesMethod(unittest.TestCase):
         #test erfolt mit mehreren edge-cases anhand der OSM-way-id
         # 1: muss bicycle_way_mit_
         # 2: muss bicycle_way_mit
-        ways = [93337908, 1251147753]
+        ways = [1169162410, 1251147753]
         ways_str = ','.join(str(x) for x in ways)
         query = f'way(id:{ways_str});out;'
         result = api.query(query)
