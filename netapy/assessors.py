@@ -317,7 +317,7 @@ class NetascoreAssessor(Assessor):
         self._write_to_network(obj, network)
     return obj
 
-  def derive_bicycle_infrastructure(self, network, read = False, write = True, **kwargs):
+  def derive_bicycle_infrastructure(self, network, read = False, write = True, debug=False, **kwargs):
     #logging.info('Derive cycling infrastructure.')
     label = "bicycle_infrastructure"
     obj = self._init_metadata(label, kind = "attribute", directed = True)
@@ -327,9 +327,17 @@ class NetascoreAssessor(Assessor):
     # Otherwise derive the attribute values from the network data.
     if not obj["data"]:
       # Fetch input data.
-      labs = ["highway", "cycleway", "cycleway:right", "cycleway:left", "cycleway:both", "segregated", "bicycle",
-              "foot", "sidewalk", "sidewalk:right", "sidewalk:left", "sidewalk:both", "bicycle_road", "cyclestreet",
-              "reversed", "indoor", "access", "tram"]
+      labs = ["highway", "cycleway", "segregated", "bicycle",
+              "foot", "sidewalk", "bicycle_road", "cyclestreet",
+              "reversed", "indoor", "access", "tram", 'traffic_sign', 'traffic_sign:forward',
+              'cycleway:left', 'cycleway:right', 'cycleway:both',
+              'sidewalk:left', 'sidewalk:right', 'sidewalk:both']
+      nested_labs_prefix = ['cycleway:left', 'cycleway:right', 'cycleway:both',
+                            'sidewalk:left', 'sidewalk:right', 'sidewalk:both']
+      nested_labs_suffix = ['bicycle', 'lane', 'segregated', 'oneway', 'foot', 'traffic_sign']
+      nested_labs = [prefix + ':' + suffix for prefix in nested_labs_prefix for suffix in nested_labs_suffix]
+      labs.extend(nested_labs)
+
       data = network._get_edge_attributes(network, *labs)
       # Derive attribute values for each street segment from the input data.
       def set_value(x, direction):
@@ -341,27 +349,39 @@ class NetascoreAssessor(Assessor):
         # fuer unveraenderte Benennung is_reversed = false setzen
         is_reversed = x["reversed"]
 
-        is_segregated = x["segregated"] == "yes"
+        #is_segregated = x["segregated"] == "yes"
+        is_segregated = any(key for key, value in x.items() if 'segregated' in key and value == 'yes')
         is_footpath = x["highway"] in ["footway", "pedestrian"]
-        use_sidepath = x["bicycle"] in ['use_sidepath']
+        #use_sidepath = x["bicycle"] in ['use_sidepath']
+        use_sidepath = any(key for key, value in x.items() if 'bicycle' in key and value == 'use_sidepath')
         is_indoor = x['indoor'] == 'yes'
         is_accessible = x['access'] == 'no'
         is_path = x["highway"] == "path"
-        is_track = x["highway"] in ["track", "service"]
+        is_track = x["highway"] in ["track"]
 
         can_walk_right = (x["foot"] in ["yes", "designated"]
+                          or any(key for key, value in x.items() if 'right:foot' in key and value in ['yes', 'designated'])
                           or x["sidewalk"] in ["yes", "separated", "both", "right", "left"]
                           or x["sidewalk:right"] in ["yes", "separated", "both", "right"]
                           or x["sidewalk:both"] in ["yes", "separated", "both"])
         can_walk_left = (x["foot"] in ["yes", "designated"]
+                         or any(key for key, value in x.items() if 'left:foot' in key and value in ['yes', 'designated'])
                          or x["sidewalk"] in ["yes", "separated", "both", "right", "left"]
                          or x["sidewalk:left"] in ["yes", "separated", "both", "left"]
                          or x["sidewalk:both"] in ["yes", "separated", "both"])
 
         # maybe we have to explicitly distinguish between when bicycle is empty (null) or when bicycle is explicitly NO or DISMOUNT
-        can_bike = x["bicycle"] in ["yes", "designated"] #should we add permissive?
+        can_bike = (x["bicycle"] in ["yes", "designated"]
+                    and x["highway"] not in ['motorway', 'motorway_link']) #should we add permissive?
         cannot_bike = (x["bicycle"] in ["no", "dismount", 'use_sidepath'] or
-                       x["highway"] in ['corridor', 'motorway', 'motorway_link', 'trunk', 'trunk_link'])
+                       x["highway"] in ['corridor', 'motorway', 'motorway_link', 'trunk', 'trunk_link'] or
+                       x["access"] in ['customers'])
+        is_obligated_segregated = (
+                ('traffic_sign' in x.keys() and isinstance(x['traffic_sign'], str) and '241' in x['traffic_sign'])
+                or ('traffic_sign:forward' in x.keys() and isinstance(x['traffic_sign:forward'], str) and '241' in x[
+          'traffic_sign:forward'])
+        )
+        #is_obligated_painted = ('traffic_sign' in x.keys() and '237' in x['traffic_sign'])
 
         #should be changed to (or at least sometimes alternatively used as) "not cannot_bike?". It can be used at least for x["highway"] == "cycleway", where adding bicycle tag seems redundant.
         #The condition could be than split: (x["highway"] == "cycleway" and not cannot_bike) OR (the_rest and can_bike)
@@ -374,31 +394,44 @@ class NetascoreAssessor(Assessor):
 
 
         is_bikepath_right = (x["highway"] == "cycleway"
-                             or x["cycleway"] in ["track"]
-                             or x["cycleway:right"] in ["track"]
-                             or x["cycleway:both"] in ["track"])
+                             or (any(key for key, value in x.items() if 'right:bicycle' in key and value in ['designated'])
+                                 and not any(key for key, value in x.items() if key == 'cycleway:right:lane'))
+                             or x["cycleway"] in ["track", "sidepath", "crossing"]
+                             or x["cycleway:right"] in ["track", "sidepath", "crossing"]
+                             or x["cycleway:both"] in ["track", "sidepath", "crossing"]
+                             or any(key for key, value in x.items() if 'right:traffic_sign' in key and value in ['237']))
         is_bikepath_left = (x["highway"] == "cycleway"
-                            or x["cycleway"] in ["track"]
-                            or x["cycleway:left"] in ["track"]
-                            or x["cycleway:both"] in ["track"])
+                            or (any(key for key, value in x.items() if 'left:bicycle' in key and value in ['designated'])
+                                and not any(key for key, value in x.items() if key == 'cycleway:left:lane'))
+                            or x["cycleway"] in ["track", "sidepath", "crossing"]
+                            or x["cycleway:left"] in ["track", "sidepath", "crossing"]
+                            or x["cycleway:both"] in ["track", "sidepath", "crossing"]
+                            or any(key for key, value in x.items() if 'left:traffic_sign' in key and value in ['237']))
 
         #### Begin categories
         ##infrastructure designated for pedestrians
-        is_pedestrian_right = is_footpath and not can_bike and not is_indoor or is_path and can_walk_right and not can_bike and not is_indoor #alternatively: (is_path or is_track)?
+        is_pedestrian_right = (is_footpath and not can_bike and not is_indoor or is_path and can_walk_right
+                               and not can_bike and not is_indoor) #alternatively: (is_path or is_track)?
 
-        is_pedestrian_left = is_footpath and not can_bike and not is_indoor or is_path and can_walk_left and not can_bike and not is_indoor #alternatively: (is_path or is_track)?
+        is_pedestrian_left = (is_footpath and not can_bike and not is_indoor or is_path and can_walk_left
+                              and not can_bike and not is_indoor) #alternatively: (is_path or is_track)?
 
         ##bicycle_road
         is_bikeroad = (x["bicycle_road"] == "yes"
                        or x["cyclestreet"] == "yes")
 
-        ##lane
+        ##Straßenbegleitender Radweg benutzungspflichtig
         is_bikelane_right = (x["cycleway"] in ["lane", "shared_lane"]
                              or x["cycleway:right"] in ["lane", "shared_lane"]
-                             or x["cycleway:both"] in ["lane", "shared_lane"])
+                             or x["cycleway:both"] in ["lane", "shared_lane"]
+                             or any(key for key, value in x.items() if 'right:lane' in key and value in ['exclusive']))
+
         is_bikelane_left = (x["cycleway"] in ["lane", "shared_lane"]
                             or x["cycleway:left"] in ["lane", "shared_lane"]
-                            or x["cycleway:both"] in ["lane", "shared_lane"])
+                            or x["cycleway:both"] in ["lane", "shared_lane"]
+                            or any(key for key, value in x.items() if 'left:lane' in key and value in ['exclusive']))
+
+        ##schutzstreifen/radfahrstreifen
         ##bus
         is_buslane_right = (x["cycleway"] == "share_busway"
                             or x["cycleway:right"] == "share_busway"
@@ -417,6 +450,10 @@ class NetascoreAssessor(Assessor):
           can_bike and is_track and not can_walk_right,# and not is_footpath,
           can_bike and is_path and is_segregated,
           can_bike and (is_track or is_footpath) and is_segregated,
+          (x["bicycle"] == "designated" and x["foot"] == "designated" and is_segregated),
+          (x.get("cycleway:right:bicycle") == "designated" and x.get("sidewalk:right:foot") == "designated" and is_segregated),
+          (x.get("cycleway:bicycle") == "designated" and x.get("sidewalk:foot") == "designated")
+
         ]
         conditions_b_way_left = [
           # is_bikeroad,
@@ -426,6 +463,10 @@ class NetascoreAssessor(Assessor):
           can_bike and is_track and not can_walk_left,# and not is_footpath,
           can_bike and is_path and is_segregated,
           can_bike and (is_track or is_footpath) and is_segregated,
+          can_bike and is_obligated_segregated,
+          (x["bicycle"] == "designated" and x["foot"] == "designated" and is_segregated),
+          (x.get("cycleway:left:bicycle") == "designated" and x.get("sidewalk:left:foot") == "designated" and is_segregated),
+          (x.get("cycleway:bicycle") == "designated" and x.get("sidewalk:foot") == "designated")
         ]
 
         # Second option: "mixed_way"
@@ -453,6 +494,41 @@ class NetascoreAssessor(Assessor):
           can_cardrive and not is_bikepath_left and not is_bikeroad and not is_footpath and not is_bikelane_left and not is_buslane_left
           and not is_path and not is_track and not cannot_bike,
         ]
+
+        if debug:
+          data = {
+            'is_reversed': is_reversed,
+            'is_segregated': is_segregated,
+            'is_footpath': is_footpath,
+            'use_sidepath': use_sidepath,
+            'is_indoor': is_indoor,
+            'is_accessible': is_accessible,
+            'is_path': is_path,
+            'is_track': is_track,
+            'can_walk_right': can_walk_right,
+            'can_walk_left': can_walk_left,
+            'can_bike': can_bike,
+            'cannot_bike': cannot_bike,
+            'is_obligated_segregated': is_obligated_segregated,
+            'can_cardrive': can_cardrive,
+            'is_not_forbidden': is_not_forbidden,
+            'is_bikepath_right': is_bikepath_right,
+            'is_bikepath_left': is_bikepath_left,
+            'is_pedestrian_right': is_pedestrian_right,
+            'is_pedestrian_left': is_pedestrian_left,
+            "is_bikeroad": is_bikeroad,
+            "is_bikelane_right": is_bikelane_right,
+            "is_bikelane_left": is_bikelane_left,
+            "is_buslane_right": is_buslane_right,
+            "is_buslane_left": is_buslane_left,
+            "conditions_b_way_right": conditions_b_way_right,
+            "conditions_b_way_left": conditions_b_way_left,
+            "conditions_mixed_right": conditions_mixed_right,
+            "conditions_mixed_left": conditions_mixed_left,
+            "conditions_mit_right": conditions_mit_right,
+            "conditions_mit_left": conditions_mit_left
+          }
+          print(data)
 
         #cat = None #the initial assignment, if it's not changed through the course, it means category = "no"
 
@@ -561,6 +637,8 @@ class NetascoreAssessor(Assessor):
             else:
               return "bus_lane_left_no_right"
 
+
+
           #### 6
           elif any(conditions_mit_right):
             if any(conditions_mit_left):
@@ -579,7 +657,7 @@ class NetascoreAssessor(Assessor):
           #### 8
           elif is_pedestrian_right and (not 'indoor' in x.values or (x['indoor'] != 'yes')):
             if is_pedestrian_left and (not 'indoor' in x.values or (x['indoor'] != 'yes')):
-              if 'indoor' in x.values and x['indoor'] == 'yes':
+              if ('indoor' in x.values and x['indoor'] == 'yes') or ('access' in x.index and x['access'] == 'customers'):
                 return "no"
               else:
                 return "pedestrian_both"
@@ -588,7 +666,7 @@ class NetascoreAssessor(Assessor):
 
 
           elif is_pedestrian_left and (not 'indoor' in x.values or (x['indoor'] != 'yes')):
-            if 'indoor' in x.values and x['indoor'] == 'yes':
+            if ('indoor' in x.values and x['indoor'] == 'yes') or ('access' in x.index and x['access'] == 'customers'):
                 return "no"
             else:
               return "pedestrian_left_no_right"
@@ -660,8 +738,10 @@ class NetascoreAssessor(Assessor):
         is_path = x["highway"] = "path"
         is_track = x["highway"] == "track"
         is_stairs = x["highway"] == "steps"
-        can_walk = x["foot"] in ["yes", "designated"]
-        can_bike = x["bicycle"] in ["yes", "designated"]
+        #can_walk = x["foot"] in ["yes", "designated"]
+        can_walk = any(key for key, value in x.items() if 'foot' in key and value in ['yes', 'designated'])
+        #can_bike = x["bicycle"] in ["yes", "designated"]
+        can_bike = any(key for key, value in x.items() if 'bicycle' in key and value in ['yes', 'designated'])
         access = x[("access_pedestrian", direction)]
         # First option: "pedestrian_area"
         if is_footarea:
