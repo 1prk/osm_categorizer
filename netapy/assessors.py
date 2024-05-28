@@ -350,7 +350,7 @@ class NetascoreAssessor(Assessor):
         is_reversed = x["reversed"]
 
         #is_segregated = x["segregated"] == "yes"
-        is_segregated = any(key for key, value in x.items() if 'segregated' in key and value == 'yes')
+        is_segregated = any(key for key, value in x.items() if 'segregated' in key and value == 'yes') #and no "nos" in segregated, zB 4746913 hat cycleway:left:segregated = no !
         is_footpath = x["highway"] in ["footway", "pedestrian"]
         #use_sidepath = x["bicycle"] in ['use_sidepath']
         use_sidepath = any(key for key, value in x.items() if 'bicycle' in key and value == 'use_sidepath')
@@ -361,14 +361,14 @@ class NetascoreAssessor(Assessor):
 
         can_walk_right = (x["foot"] in ["yes", "designated"]
                           or any(key for key, value in x.items() if 'right:foot' in key and value in ['yes', 'designated'])
-                          or x["sidewalk"] in ["yes", "separated", "both", "right", "left"]
-                          or x["sidewalk:right"] in ["yes", "separated", "both", "right"]
-                          or x["sidewalk:both"] in ["yes", "separated", "both"])
+                          or x["sidewalk"] in ["yes", "separated"]#, "both", "right", "left"]
+                          or x["sidewalk:right"] in ["yes", "separated"]#,, "both", "right"]
+                          or x["sidewalk:both"] in ["yes", "separated"])#, "both"])
         can_walk_left = (x["foot"] in ["yes", "designated"]
                          or any(key for key, value in x.items() if 'left:foot' in key and value in ['yes', 'designated'])
-                         or x["sidewalk"] in ["yes", "separated", "both", "right", "left"]
-                         or x["sidewalk:left"] in ["yes", "separated", "both", "left"]
-                         or x["sidewalk:both"] in ["yes", "separated", "both"])
+                         or x["sidewalk"] in ["yes", "separated"]#, "both", "right", "left"]
+                         or x["sidewalk:left"] in ["yes", "separated"]#, "both", "left"]
+                         or x["sidewalk:both"] in ["yes", "separated"])#, "both"])
 
         # maybe we have to explicitly distinguish between when bicycle is empty (null) or when bicycle is explicitly NO or DISMOUNT
         can_bike = (x["bicycle"] in ["yes", "designated"]
@@ -541,12 +541,12 @@ class NetascoreAssessor(Assessor):
           elif any(conditions_b_way_right):
             if any(conditions_b_way_left):
               return "bicycle_way_both"
-            elif any(conditions_mixed_left):
-              return "bicycle_way_right_mixed_left"
             elif is_bikelane_left:
               return "bicycle_way_right_lane_left"
             elif is_buslane_left:
               return "bicycle_way_right_bus_left"
+            elif any(conditions_mixed_left):
+              return "bicycle_way_right_mixed_left"
             elif any(conditions_mit_left):
               return "bicycle_way_right_mit_left"
             elif is_pedestrian_left:
@@ -555,12 +555,12 @@ class NetascoreAssessor(Assessor):
               return "bicycle_way_right_no_left"
 
           elif any(conditions_b_way_left):
-            if any(conditions_mixed_right):
-              return "bicycle_way_left_mixed_right"
-            elif is_bikelane_right:
+            if is_bikelane_right:
               return "bicycle_way_left_lane_right"
             elif is_buslane_right:
               return "bicycle_way_left_bus_right"
+            elif any(conditions_mixed_right):
+              return "bicycle_way_left_mixed_right"
             elif any(conditions_mit_right):
               return "bicycle_way_left_mit_right"
             elif is_pedestrian_right:
@@ -568,39 +568,14 @@ class NetascoreAssessor(Assessor):
             else:
               return "bicycle_way_left_no_right"
 
-          #### 2
-          elif any(conditions_mixed_right):
-            if any(conditions_mixed_left):
-              return "mixed_way_both"
-            elif is_bikelane_left:
-              return "mixed_way_right_lane_left"
-            elif is_buslane_left:
-              return "mixed_way_right_bus_left"
-            elif any(conditions_mit_left):
-              return "mixed_way_right_mit_left"
-            elif is_pedestrian_left:
-              return "mixed_way_right_pedestrian_left"
-            else:
-              return "mixed_way_right_no_left"
-
-          elif any(conditions_mixed_left):
-            if is_bikelane_right:
-              return "mixed_way_left_lane_right"
-            elif is_buslane_right:
-              return "mixed_way_left_bus_right"
-            elif any(conditions_mit_right):
-              return "mixed_way_left_mit_right"
-            elif is_pedestrian_right:
-              return "mixed_way_left_pedestrian_right"
-            else:
-              return "mixed_way_left_no_right"
-
           #### 4 # Third option: "bicycle_lane"
           elif is_bikelane_right:
             if is_bikelane_left:
               return "bicycle_lane_both"
             elif is_buslane_left:
               return "bicycle_lane_right_bus_left"
+            elif any(conditions_mixed_left):
+              return "bicycle_lane_right_mixed_left"
             elif any(conditions_mit_left):
               return "bicycle_lane_right_mit_left"
             elif is_pedestrian_left:
@@ -611,6 +586,8 @@ class NetascoreAssessor(Assessor):
           elif is_bikelane_left:
             if is_buslane_right:
               return "bicycle_lane_left_bus_right"
+            elif any(conditions_mixed_right):
+              return "bicycle_lane_left_mixed_right"
             elif any(conditions_mit_right):
               return "bicycle_lane_left_mit_right"
             elif is_pedestrian_right:
@@ -622,6 +599,8 @@ class NetascoreAssessor(Assessor):
           elif is_buslane_right:
             if is_buslane_left:
               return "bus_lane_both"
+            elif any(conditions_mixed_left):
+              return "bus_lane_right_mixed_left"
             elif any(conditions_mit_left):
               return "bus_lane_right_mit_left"
             elif is_pedestrian_left:
@@ -630,7 +609,9 @@ class NetascoreAssessor(Assessor):
               return "bus_lane_right_no_left"
 
           elif is_buslane_left:
-            if any(conditions_mit_right):
+            if any(conditions_mixed_right):
+              return "bus_lane_left_mixed_right"
+            elif any(conditions_mit_right):
               return "bus_lane_left_mit_right"
             elif is_pedestrian_right:
               return "bus_lane_left_pedestrian_right"
@@ -638,6 +619,24 @@ class NetascoreAssessor(Assessor):
               return "bus_lane_left_no_right"
 
 
+          #### 2
+          elif any(conditions_mixed_right):
+            if any(conditions_mixed_left):
+              return "mixed_way_both"
+            elif any(conditions_mit_left):
+              return "mixed_way_right_mit_left"
+            elif is_pedestrian_left:
+              return "mixed_way_right_pedestrian_left"
+            else:
+              return "mixed_way_right_no_left"
+
+          elif any(conditions_mixed_left):
+            if any(conditions_mit_right):
+              return "mixed_way_left_mit_right"
+            elif is_pedestrian_right:
+              return "mixed_way_left_pedestrian_right"
+            else:
+              return "mixed_way_left_no_right"
 
           #### 6
           elif any(conditions_mit_right):
