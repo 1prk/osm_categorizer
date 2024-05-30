@@ -331,7 +331,8 @@ class NetascoreAssessor(Assessor):
               "foot", "sidewalk", "bicycle_road", "cyclestreet",
               "reversed", "indoor", "access", "tram", 'traffic_sign', 'traffic_sign:forward',
               'cycleway:left', 'cycleway:right', 'cycleway:both',
-              'sidewalk:left', 'sidewalk:right', 'sidewalk:both']
+              'sidewalk:left', 'sidewalk:right', 'sidewalk:both',
+              "motor_vehicle", "tracktype"]
       nested_labs_prefix = ['cycleway:left', 'cycleway:right', 'cycleway:both',
                             'sidewalk:left', 'sidewalk:right', 'sidewalk:both']
       nested_labs_suffix = ['bicycle', 'lane', 'segregated', 'oneway', 'foot', 'traffic_sign']
@@ -361,14 +362,14 @@ class NetascoreAssessor(Assessor):
 
         can_walk_right = (x["foot"] in ["yes", "designated"]
                           or any(key for key, value in x.items() if 'right:foot' in key and value in ['yes', 'designated'])
-                          or x["sidewalk"] in ["yes", "separated"]#, "both", "right", "left"]
-                          or x["sidewalk:right"] in ["yes", "separated"]#,, "both", "right"]
-                          or x["sidewalk:both"] in ["yes", "separated"])#, "both"])
+                          or x["sidewalk"] in ["yes", "separated", "both", "right", "left"]
+                          or x["sidewalk:right"] in ["yes", "separated", "both", "right"]
+                          or x["sidewalk:both"] in ["yes", "separated", "both"])
         can_walk_left = (x["foot"] in ["yes", "designated"]
                          or any(key for key, value in x.items() if 'left:foot' in key and value in ['yes', 'designated'])
-                         or x["sidewalk"] in ["yes", "separated"]#, "both", "right", "left"]
-                         or x["sidewalk:left"] in ["yes", "separated"]#, "both", "left"]
-                         or x["sidewalk:both"] in ["yes", "separated"])#, "both"])
+                         or x["sidewalk"] in ["yes", "separated", "both", "right", "left"]
+                         or x["sidewalk:left"] in ["yes", "separated", "both", "left"]
+                         or x["sidewalk:both"] in ["yes", "separated", "both"])
 
         # maybe we have to explicitly distinguish between when bicycle is empty (null) or when bicycle is explicitly NO or DISMOUNT
         can_bike = (x["bicycle"] in ["yes", "designated"]
@@ -382,6 +383,15 @@ class NetascoreAssessor(Assessor):
           'traffic_sign:forward'])
         )
         #is_obligated_painted = ('traffic_sign' in x.keys() and '237' in x['traffic_sign'])
+
+        C1 = x["highway"] in ["service"]#, "living_street"]
+        C2 = x["motor_vehicle"] in ["agricultural", "forestry"]
+        C3 = pd.isnull(x["access"]) or x["access"] != "no"
+        C4 = x["highway"] == "path"
+        C5 = x["highway"] == "track"
+        C6 = pd.isnull(x["tracktype"]) or x["tracktype"] in ["grade1", "grade2"]
+        C7 = pd.isnull(x["motor_vehicle"]) or x["motor_vehicle"] != "no"
+        is_service = (C1 or (C2 and C3) or (C4 and C3) or (C5 and C3 and C6 and C7)) and not x["bicycle"] in ["designated"]
 
         #should be changed to (or at least sometimes alternatively used as) "not cannot_bike?". It can be used at least for x["highway"] == "cycleway", where adding bicycle tag seems redundant.
         #The condition could be than split: (x["highway"] == "cycleway" and not cannot_bike) OR (the_rest and can_bike)
@@ -533,6 +543,14 @@ class NetascoreAssessor(Assessor):
         #cat = None #the initial assignment, if it's not changed through the course, it means category = "no"
 
         def get_infra(x):
+
+          #remove service right away
+          if is_service:
+            if ('access' in x.index and x['access'] == 'no') or ('tram' in x.index and x['tram'] == 'yes'):
+              return 'no'
+            else:
+              return "service_misc"
+
           #### 3 # new option: "bicycle_road"
           if is_bikeroad:
             return "bicycle_road"
@@ -672,12 +690,6 @@ class NetascoreAssessor(Assessor):
 
           elif is_not_forbidden:
             return "path_not_forbidden"
-
-          elif x["highway"] == "service":
-            if ('access' in x.index and x['access'] == 'no') or ('tram' in x.index and x['tram'] == 'yes'):
-              return 'no'
-            else:
-              return "service_misc"
 
           #### Fallback option: "no"
           else:
