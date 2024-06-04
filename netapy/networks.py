@@ -165,8 +165,8 @@ class NetascoreNetwork(Network):
       "filepath": filepath,
       "bidirectional": False,
       "simplify": False,
-      "retain_all": False,
-      "encoding": 'utf-8'
+      "retain_all": False#,
+      #"encoding": 'utf-8'
     }
     obj = cls(ox.graph_from_xml(**qkwargs), qtype, qkwargs, **kwargs)
     ox.settings.useful_tags_way = DEFAULT_STREET_KEYS
