@@ -382,7 +382,23 @@ class NetascoreAssessor(Assessor):
                 or ('traffic_sign:forward' in x.keys() and isinstance(x['traffic_sign:forward'], str) and '241' in x[
           'traffic_sign:forward'])
         )
-        #is_obligated_painted = ('traffic_sign' in x.keys() and '237' in x['traffic_sign'])
+
+        is_bicycle_designated_left = (((x["bicycle"] == "designated") or
+                                      (x.get("cycleway:left:bicycle") == "designated")) or
+                                      (x.get("cycleway:bicycle") == "designated"))
+
+        is_bicycle_designated_right = ((x["bicycle"] == "designated") or
+                                      (x.get("cycleway:right:bicycle") == "designated") or
+                                      (x.get("cycleway:bicycle") == "designated"))
+
+        is_pedestrian_designated_left = (x["foot"] == "designated" or
+                                        x.get("sidewalk:left:foot") == "designated" or
+                                        x.get("sidewalk:foot") == "designated")
+        is_pedestrian_designated_right = (x["foot"] == "designated" or
+                                        x.get("sidewalk:right:foot") == "designated" or
+                                        x.get("sidewalk:foot") == "designated")
+
+#is_obligated_painted = ('traffic_sign' in x.keys() and '237' in x['traffic_sign'])
 
         ### only for now, so that C2 and C7 work - should be deleted and "motor_vehicle" should be present in all datasets
         try:
@@ -460,16 +476,13 @@ class NetascoreAssessor(Assessor):
         # First option: "bicycle_way_right"
         conditions_b_way_right = [
           # is_bikeroad,
-          is_bikepath_right and not can_walk_right, #b_way_right_0
-          is_bikepath_right and is_segregated, #b_way_right_1
-          can_bike and is_path and not can_walk_right,# and not is_footpath, #b_way_right_2
-          can_bike and is_track and not can_walk_right,# and not is_footpath, #b_way_right_3
-          can_bike and is_path and is_segregated, #b_way_right_4
-          can_bike and (is_track or is_footpath) and is_segregated, #b_way_right_5
-          can_bike and is_obligated_segregated,  # b_way_left_6
-          (x["bicycle"] == "designated" and x["foot"] == "designated" and is_segregated), #b_way_right_7
-          (x.get("cycleway:right:bicycle") == "designated" and x.get("sidewalk:right:foot") == "designated" and is_segregated), #b_way_right_8
-          (x.get("cycleway:bicycle") == "designated" and x.get("sidewalk:foot") == "designated") #b_way_right_9
+          is_bikepath_right and not can_walk_right, #0 and 1
+          is_bikepath_right and is_segregated, #0 and 2
+          can_bike and is_path and not can_walk_right,# and not is_footpath, #3, 4, 1
+          can_bike and is_track and not can_walk_right,# and not is_footpath, #3, 5, 1
+          can_bike and (is_track or is_footpath or is_path) and is_segregated, #b_way_right_5 #3, 6, 2
+          can_bike and is_obligated_segregated,  # 3,7
+          is_bicycle_designated_right and is_pedestrian_designated_right and is_segregated
         ]
 
         conditions_b_way_left = [
@@ -478,20 +491,17 @@ class NetascoreAssessor(Assessor):
           is_bikepath_left and is_segregated, #b_way_left_1
           can_bike and is_path and not can_walk_left,# and not is_footpath, #b_way_left_2
           can_bike and is_track and not can_walk_left,# and not is_footpath, #b_way_left_3
-          can_bike and is_path and is_segregated, #b_way_left_4
-          can_bike and (is_track or is_footpath) and is_segregated, #b_way_left_5
+          can_bike and (is_track or is_footpath or is_path) and is_segregated, #b_way_left_5
           can_bike and is_obligated_segregated, #b_way_left_6
-          (x["bicycle"] == "designated" and x["foot"] == "designated" and is_segregated), #b_way_left_7
-          (x.get("cycleway:left:bicycle") == "designated" and x.get("sidewalk:left:foot") == "designated" and is_segregated), #b_way_left_8
-          (x.get("cycleway:bicycle") == "designated" and x.get("sidewalk:foot") == "designated") #b_way_left_9
+          is_bicycle_designated_left and is_pedestrian_designated_left and is_segregated
         ]
 
         # Second option: "mixed_way"
         ##mixed
         conditions_mixed_right = [
-          is_bikepath_right and can_walk_right and not is_segregated, #mixed_right_0
-          is_footpath and can_bike and not is_segregated, #mixed_right_1
-          (is_path or is_track) and can_bike and can_walk_right and not is_segregated, #mixed_right_2
+          is_bikepath_right and can_walk_right and not is_segregated, #0 and 1 and 2
+          is_footpath and can_bike and not is_segregated, #3 and 4 and 2
+          (is_path or is_track) and can_bike and can_walk_right and not is_segregated, #5 and 4 and 1 and 2
           #is_track and can_bike and can_walk_right and not is_segregated,
         ]
         conditions_mixed_left = [
