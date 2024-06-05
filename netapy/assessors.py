@@ -332,7 +332,8 @@ class NetascoreAssessor(Assessor):
               "reversed", "indoor", "access", "tram", 'traffic_sign', 'traffic_sign:forward',
               'cycleway:left', 'cycleway:right', 'cycleway:both',
               'sidewalk:left', 'sidewalk:right', 'sidewalk:both',
-              "motor_vehicle", "tracktype"]
+              "motor_vehicle", "tracktype",
+              "cycle_highway"]
       nested_labs_prefix = ['cycleway:left', 'cycleway:right', 'cycleway:both',
                             'sidewalk:left', 'sidewalk:right', 'sidewalk:both']
       nested_labs_suffix = ['bicycle', 'lane', 'segregated', 'oneway', 'foot', 'traffic_sign']
@@ -567,6 +568,10 @@ class NetascoreAssessor(Assessor):
 
           if is_service:
             return "service_misc"
+
+          if 'cycle_highway' in x.index:
+            if x["cycle_highway"] == "yes":
+              return "cycle_highway"
 
           #### 3 # new option: "bicycle_road"
           if is_bikeroad:
