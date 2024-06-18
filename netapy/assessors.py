@@ -414,7 +414,10 @@ class NetascoreAssessor(Assessor):
         C5 = x["highway"] == "track"
         C6 = pd.isnull(x["tracktype"]) or x["tracktype"] in ["grade1", "grade2"]
         C7 = pd.isnull(x["motor_vehicle"]) or x["motor_vehicle"] != "no"
-        is_service = (C1 or (C2 and C3) or (C4 and C3) or (C5 and C3 and C6 and C7)) and not x["bicycle"] in ["designated"]
+        is_service = (C1 or
+                      (C2 and C3) or
+                      #(C4 and C3) or
+                      (C5 and C3 and C6 and C7)) and not x["bicycle"] in ["designated"]
 
         #should be changed to (or at least sometimes alternatively used as) "not cannot_bike?". It can be used at least for x["highway"] == "cycleway", where adding bicycle tag seems redundant.
         #The condition could be than split: (x["highway"] == "cycleway" and not cannot_bike) OR (the_rest and can_bike)
@@ -696,7 +699,7 @@ class NetascoreAssessor(Assessor):
           #### 8
           elif is_pedestrian_right and (not 'indoor' in x.values or (x['indoor'] != 'yes')):
             if is_pedestrian_left and (not 'indoor' in x.values or (x['indoor'] != 'yes')):
-              if ('indoor' in x.values and x['indoor'] == 'yes') or ('access' in x.index and x['access'] == 'customers'):
+              if 'access' in x.index and x['access'] == 'customers':
                 return "no"
               else:
                 return "pedestrian_both"
@@ -705,7 +708,7 @@ class NetascoreAssessor(Assessor):
 
 
           elif is_pedestrian_left and (not 'indoor' in x.values or (x['indoor'] != 'yes')):
-            if ('indoor' in x.values and x['indoor'] == 'yes') or ('access' in x.index and x['access'] == 'customers'):
+            if 'access' in x.index and x['access'] == 'customers':
                 return "no"
             else:
               return "pedestrian_left_no_right"
@@ -717,69 +720,10 @@ class NetascoreAssessor(Assessor):
           else:
             return "no"
 
-
-        def assign_dicts(x):
-
-          b_way_dict = {"b_way_right_0": is_bikepath_right and not can_walk_right,  # b_way_right_0,
-                        "b_way_right_1": is_bikepath_right and is_segregated,  # b_way_right_1,
-                        "b_way_right_2": can_bike and is_path and not can_walk_right,
-                        # and not is_footpath, #b_way_right_2,
-                        "b_way_right_3": can_bike and is_track and not can_walk_right,
-                        # and not is_footpath, #b_way_right_3,
-                        "b_way_right_4": can_bike and is_path and is_segregated,  # b_way_right_4,
-                        "b_way_right_5": can_bike and (is_track or is_footpath) and is_segregated,  # b_way_right_5,
-                        "b_way_right_6": can_bike and is_obligated_segregated,  # b_way_left_6,
-                        "b_way_right_7": (x["bicycle"] == "designated" and x["foot"] == "designated" and is_segregated),
-                        # b_way_right_7,
-                        "b_way_right_8": (x.get("cycleway:right:bicycle") == "designated" and x.get(
-                          "sidewalk:right:foot") == "designated" and is_segregated),  # b_way_right_8,
-                        "b_way_right_9": (
-                                  x.get("cycleway:bicycle") == "designated" and x.get("sidewalk:foot") == "designated"),
-                        # b_way_right_9
-
-                        "b_way_left_0": is_bikepath_left and not can_walk_left,  # b_way_left_0
-                        "b_way_left_1": is_bikepath_left and is_segregated,  # b_way_left_1
-                        "b_way_left_2": can_bike and is_path and not can_walk_left,
-                        # and not is_footpath, #b_way_left_2
-                        "b_way_left_3": can_bike and is_track and not can_walk_left,
-                        # and not is_footpath, #b_way_left_3
-                        "b_way_left_4": can_bike and is_path and is_segregated,  # b_way_left_4
-                        "b_way_left_5": can_bike and (is_track or is_footpath) and is_segregated,  # b_way_left_5
-                        "b_way_left_6": can_bike and is_obligated_segregated,  # b_way_left_6
-                        "b_way_left_7": (x["bicycle"] == "designated" and x["foot"] == "designated" and is_segregated),
-                        # b_way_left_7
-                        "b_way_left_8": (x.get("cycleway:left:bicycle") == "designated" and x.get(
-                          "sidewalk:left:foot") == "designated" and is_segregated),  # b_way_left_8
-                        "b_way_left_9": (
-                                  x.get("cycleway:bicycle") == "designated" and x.get("sidewalk:foot") == "designated")
-                        # b_way_left_9
-                        }
-
-          mixed_dict = {
-            "mixed_right_0": is_bikepath_right and can_walk_right and not is_segregated,  # mixed_right_0
-            "mixed_right_1": is_footpath and can_bike and not is_segregated,  # mixed_right_1
-            "mixed_right_10": is_footpath,
-            "mixed_right_11": can_bike,
-            "mixed_right_12": not is_segregated,
-            "mixed_right_2": (is_path or is_track) and can_bike and can_walk_right and not is_segregated,
-            # mixed_right_2
-
-            "mixed_left_0": is_bikepath_left and can_walk_left and not is_segregated,  # mixed_left_0
-            "mixed_left_10": is_footpath,
-            "mixed_left_11": can_bike,
-            "mixed_left_12": not is_segregated,
-            "mixed_left_1": is_footpath and can_bike and not is_segregated,  # mixed_left_1
-            "mixed_left_2": (is_path or is_track) and can_bike and can_walk_left and not is_segregated  # mixed_left_2
-          }
-
-          return b_way_dict, mixed_dict
-
         cat = None
         cat = get_infra(x)
         # making sure that the variable cat has been filled
         assert(isinstance(cat, str))
-
-        dicts = assign_dicts(x)
 
         if ("_both" in cat) or (cat in ["no", "bicycle_road", "path_not_forbidden", "service_misc"]):
           return [cat, dicts]
@@ -804,7 +748,7 @@ class NetascoreAssessor(Assessor):
       # Write derived attributes to the network if write = True.
       if write:
         self._write_to_network(obj, network)
-    return obj #[obj, dicts]
+    return obj
 
   def derive_pedestrian_infrastructure(self, network, read = False, write = True,
                                        read_deps = None, write_deps = None, **kwargs):
