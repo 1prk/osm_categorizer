@@ -416,13 +416,13 @@ class NetascoreAssessor(Assessor):
 
 #is_obligated_painted = ('traffic_sign' in x.keys() and '237' in x['traffic_sign'])
 
-        is_service = x["highway"] in ["service"]#, "living_street"]
+        is_service_tag = x["highway"] in ["service"]#, "living_street"]
         is_agricultural = x.get("motor_vehicle") in ["agricultural", "forestry"]
         is_accessible = pd.isnull(x["access"]) or not is_not_accessible
         is_smooth = pd.isnull(x["tracktype"]) or x["tracktype"] in ["grade1", "grade2"]
         is_vehicle_allowed = pd.isnull(x.get("motor_vehicle")) or x.get("motor_vehicle") != "no"
 
-        is_service = (is_service or
+        is_service = (is_service_tag or
                       (is_agricultural and is_accessible) or
                       (is_track and is_accessible and is_smooth and is_vehicle_allowed)) and not is_designated
 
@@ -453,8 +453,8 @@ class NetascoreAssessor(Assessor):
 
         #### Begin categories
         ##infrastructure designated for pedestrians
-        is_pedestrian_right = (is_footpath and not can_bike and not is_indoor or is_path and can_walk_right
-                               and not can_bike and not is_indoor) #alternatively: (is_path or is_track)?
+        is_pedestrian_right = (is_footpath and not can_bike and not is_indoor or
+                               is_path and can_walk_right and not can_bike and not is_indoor) #alternatively: (is_path or is_track)?
 
         is_pedestrian_left = (is_footpath and not can_bike and not is_indoor or is_path and can_walk_left
                               and not can_bike and not is_indoor) #alternatively: (is_path or is_track)?

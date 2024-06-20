@@ -222,10 +222,10 @@ class Assessor():
 
         ##infrastructure designated for pedestrians
         is_pedestrian_right = lambda x: ((self.is_footpath(x) and not self.can_bike(x) and not self.is_indoor(x))
-                                         or (self.is_path(x) and self.can_walk_right(x)))  # alternatively: (is_path or is_track)?
+                                         or (self.is_path(x) and self.can_walk_right(x) and not self.can_bike(x) and not self.is_indoor(x)))  # alternatively: (is_path or is_track)?
 
         is_pedestrian_left = lambda x: ((self.is_footpath(x) and not self.can_bike(x) and not self.is_indoor(x))
-                                        or (self.is_path(x) and self.can_walk_left(x)))  # alternatively: (is_path or is_track)?
+                                        or (self.is_path(x) and self.can_walk_left(x) and not self.can_bike(x) and not self.is_indoor(x)))  # alternatively: (is_path or is_track)?
 
         if sides == "double":
             def get_infra(x):
