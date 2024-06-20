@@ -725,25 +725,25 @@ class NetascoreAssessor(Assessor):
         # making sure that the variable cat has been filled
         assert(isinstance(cat, str))
 
-        if ("_both" in cat) or (cat in ["no", "bicycle_road", "path_not_forbidden", "service_misc"]):
-          return [cat, dicts]
+        if ("_both" in cat) or (cat in ["no", "cycle_highway", "bicycle_road", "path_not_forbidden", "service_misc"]):
+          return cat
         else:
           # for categories with "right & left" - revert if needed
           if not is_reversed:
-            return [cat, dicts]
+            return cat
           else:
             sides = ["left", "right"] if cat.split("_")[-1] == "right" else ["right", "left"]
             for side in sides:
               cat = " ".join(cat.split(side))
 
             res = cat.split()
-            return [res[0] + sides[1] + res[1] + sides[0], dicts]
+            return res[0] + sides[1] + res[1] + sides[0]
 
       for direction in ["forward", "backward"]:
         vals = {x[0]:set_value(x[1], direction)[0] for x in data.iterrows()}
         obj["data"][direction] = vals
 
-      dicts = {x[0]: set_value(x[1], "forward")[1] for x in data.iterrows()}
+      #dicts = {x[0]: set_value(x[1], "forward")[1] for x in data.iterrows()}
 
       # Write derived attributes to the network if write = True.
       if write:
