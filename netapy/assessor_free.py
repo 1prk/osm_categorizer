@@ -83,6 +83,7 @@ class Assessor():
 
         self.is_service = lambda x: (self.is_service_tag(x) or
                                 (self.is_agricultural(x) and self.is_accessible(x)) or
+                                (self.is_path(x) and self.is_accessible(x)) or
                                 (self.is_track(x) and self.is_accessible(x) and self.is_smooth(x) and self.is_vehicle_allowed(
                                     x))) and not self.is_designated(x)
 

@@ -424,6 +424,7 @@ class NetascoreAssessor(Assessor):
 
         is_service = (is_service_tag or
                       (is_agricultural and is_accessible) or
+                      (is_path and is_accessible) or
                       (is_track and is_accessible and is_smooth and is_vehicle_allowed)) and not is_designated
 
         #should be changed to (or at least sometimes alternatively used as) "not cannot_bike?". It can be used at least for x["highway"] == "cycleway", where adding bicycle tag seems redundant.
@@ -456,8 +457,8 @@ class NetascoreAssessor(Assessor):
         is_pedestrian_right = (is_footpath and not can_bike and not is_indoor or
                                is_path and can_walk_right and not can_bike and not is_indoor) #alternatively: (is_path or is_track)?
 
-        is_pedestrian_left = (is_footpath and not can_bike and not is_indoor or is_path and can_walk_left
-                              and not can_bike and not is_indoor) #alternatively: (is_path or is_track)?
+        is_pedestrian_left = (is_footpath and not can_bike and not is_indoor or
+                              is_path and can_walk_left and not can_bike and not is_indoor) #alternatively: (is_path or is_track)?
 
         is_cycle_highway = (x.get("cycle_highway") == "yes")
 
@@ -577,7 +578,7 @@ class NetascoreAssessor(Assessor):
             return "service_misc"
 
           if is_cycle_highway:
-              return "cycle_highway"
+            return "cycle_highway"
 
           #### 3 # new option: "bicycle_road"
           if is_bikeroad:
@@ -743,7 +744,7 @@ class NetascoreAssessor(Assessor):
             return res[0] + sides[1] + res[1] + sides[0]
 
       for direction in ["forward", "backward"]:
-        vals = {x[0]:set_value(x[1], direction)[0] for x in data.iterrows()}
+        vals = {x[0]:set_value(x[1], direction) for x in data.iterrows()}
         obj["data"][direction] = vals
 
       #dicts = {x[0]: set_value(x[1], "forward")[1] for x in data.iterrows()}
