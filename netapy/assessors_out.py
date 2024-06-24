@@ -1,4 +1,79 @@
 import pandas as pd
+import geopandas as gpd
+import pyrosm
+import json
+
+OSM_STREET_KEYS = [
+  "name",
+  "highway",
+  "access",
+  "oneway",
+  "bridge",
+  "tunnel",
+  "junction",
+  "service",
+  "maxspeed",
+  "lanes",
+  "lanes:forward",
+  "lanes:backward",
+  "width",
+  "surface",
+  "tracktype",
+  "smoothness",
+  "bicycle",
+  "cyclestreet",
+  "bicycle_road",
+  "cycleway",
+  "cycleway:both",
+  "cycleway:left",
+  "cycleway:right",
+  "foot",
+  "footway",
+  "sidewalk",
+  "sidewalk:both",
+  "sidewalk:left",
+  "sidewalk:right",
+  "sidewalk:foot",
+  "segregated",
+  "indoor",
+  "tram",
+  "traffic_sign",
+  "traffic_sign:forward",
+  "cycleway:bicycle",
+  'cycleway:left:bicycle',
+  'cycleway:left:lane',
+  'cycleway:left:segregated',
+  'cycleway:left:oneway',
+  'cycleway:left:foot',
+  'cycleway:left:traffic_sign',
+  'cycleway:right:bicycle',
+  'cycleway:right:lane'
+  'cycleway:right:segregated',
+  'cycleway:right:oneway',
+  'cycleway:right:foot',
+  'cycleway:right:traffic_sign',
+  'cycleway:both:bicycle',
+  'cycleway:both:lane',
+  'cycleway:both:segregated',
+  'cycleway:both:oneway',
+  'cycleway:both:foot',
+  'cycleway:both:traffic_sign',
+  'sidewalk:left:bicycle',
+  'sidewalk:left:segregated',
+  'sidewalk:left:oneway',
+  'sidewalk:left:foot',
+  'sidewalk:left:traffic_sign',
+  'sidewalk:right:bicycle',
+  'sidewalk:right:segregated',
+  'sidewalk:right:oneway',
+  'sidewalk:right:foot',
+  'sidewalk:right:traffic_sign',
+  'sidewalk:both:bicycle',
+  'sidewalk:both:segregated',
+  'sidewalk:both:oneway',
+  'sidewalk:both:foot',
+  'sidewalk:both:traffic_sign'
+]
 
 def derive_bicycle_infrastructure(x):
     is_reversed = x["reversed"]
@@ -333,3 +408,13 @@ def derive_bicycle_infrastructure(x):
 
             res = cat.split()
             return res[0] + sides[1] + res[1] + sides[0]
+
+if __name__ == "__main__":
+    osm_file = pyrosm.OSM("../Bietigheim-Bissingen_osm.osm.pbf")
+    osm = osm_file.get_network()
+    osm['tags'] = osm['tags'].apply(json.loads)
+    osm_normalized = pd.json_normalize(osm['tags'])
+    osm_n = pd.concat([osm, osm_normalized])
+    osm_prepared = osm_n[osm_n.columns.intersection(OSM_STREET_KEYS)]
+    osm_prepared['reversed'] = 'no'
+    derive_bicycle_infrastructure(osm_prepared)
