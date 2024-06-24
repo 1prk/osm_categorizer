@@ -463,8 +463,8 @@ class NetascoreAssessor(Assessor):
         is_cycle_highway = (x.get("cycle_highway") == "yes")
 
         ##bicycle_road
-        is_bikeroad = (x["bicycle_road"] == "yes"
-                       or x["cyclestreet"] == "yes")
+        is_bikeroad = (x.get("bicycle_road") == "yes"
+                       or x.get("cyclestreet") == "yes")
 
         ##Straßenbegleitender Radweg benutzungspflichtig
         is_bikelane_right = (x["cycleway"] in ["lane", "shared_lane"]
@@ -575,7 +575,7 @@ class NetascoreAssessor(Assessor):
           #remove service right away
 
           if is_service:
-            return "service_misc"
+            return "service"
 
           if is_cycle_highway:
             return "cycle_highway"
@@ -729,7 +729,7 @@ class NetascoreAssessor(Assessor):
         # making sure that the variable cat has been filled
         assert(isinstance(cat, str))
 
-        if ("_both" in cat) or (cat in ["no", "cycle_highway", "bicycle_road", "path_not_forbidden", "service_misc"]):
+        if ("_both" in cat) or (cat in ["no", "cycle_highway", "bicycle_road", "path_not_forbidden", "service"]):
           return cat
         else:
           # for categories with "right & left" - revert if needed
