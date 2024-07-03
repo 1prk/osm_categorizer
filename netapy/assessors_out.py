@@ -234,7 +234,7 @@ def derive_bicycle_infrastructure(x):
 
     def get_infra(x):
         #### inaccessible roads
-        if ('access' in x.index and is_not_accessible) or ('tram' in x.index and x['tram'] == 'yes'):
+        if ('access' in x.values() and is_not_accessible(x)) or ('tram' in x.values() and x['tram'] == 'yes'):
             return 'no'  # unpacked from "service"
 
         #### service
@@ -366,9 +366,9 @@ def derive_bicycle_infrastructure(x):
                 return "mit_road_left_no_right"
 
         #### pedestrian
-        elif is_pedestrian_right and (not 'indoor' in x.values or (x['indoor'] != 'yes')):
-            if is_pedestrian_left and (not 'indoor' in x.values or (x['indoor'] != 'yes')):
-                if 'access' in x.index and x['access'] == 'customers':
+        elif is_pedestrian_right and (not 'indoor' in x.values() or (x['indoor'] != 'yes')):
+            if is_pedestrian_left and (not 'indoor' in x.values() or (x['indoor'] != 'yes')):
+                if 'access' in x.values() and x['access'] == 'customers':
                     return "no"
                 else:
                     return "pedestrian_both"
@@ -376,8 +376,8 @@ def derive_bicycle_infrastructure(x):
                 return "pedestrian_right_no_left"
 
 
-        elif is_pedestrian_left and (not 'indoor' in x.values or (x['indoor'] != 'yes')):
-            if 'access' in x.index and x['access'] == 'customers':
+        elif is_pedestrian_left and (not 'indoor' in x.values() or (x['indoor'] != 'yes')):
+            if 'access' in x.values() and x['access'] == 'customers':
                 return "no"
             else:
                 return "pedestrian_left_no_right"
@@ -417,4 +417,4 @@ if __name__ == "__main__":
     osm_n = pd.concat([osm, osm_normalized])
     osm_prepared = osm_n[osm_n.columns.intersection(OSM_STREET_KEYS)]
     osm_prepared['reversed'] = 'no'
-    derive_bicycle_infrastructure(osm_prepared)
+    osm_prepared['bicycle_infrastructure:forward'] = osm_prepared.apply(lambda x: derive_bicycle_infrastructure(x.to_dict()), axis=1)
