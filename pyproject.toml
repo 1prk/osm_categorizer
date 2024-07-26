@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "osm-categorizer"
+version = "0.1.1"
+description = "A tool to identify & categorize bicycle infrastructure in a OpenStreetMap street network. Mainly inspired by the NetAPy (Python implementation of the NetAScore toolbox developed by the University of Salzburg). Further refined and developed by the BikeLab team @ TU Dresden."
+authors = ["Iwan Porojkow <iwan.porojkow@tu-dresden.de>, Miroslawa Lukawska <miroslawa.lukawska@tu-dresden.de>, Emely Richter <emely.richter@tu-dresden.de>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+pandas = "^2.2.2"
+overpy = "^0.7"
+geopandas = "^1.0.1"
+tqdm = "^4.66.4"
+pyrosm = "^0.6.2"
+networkx = "^3.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
