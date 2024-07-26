@@ -7,7 +7,7 @@ license = "MIT"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.10,<4.0"
 pandas = "^2.2.2"
 overpy = "^0.7"
 geopandas = "^1.0.1"
