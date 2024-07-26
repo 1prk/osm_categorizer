@@ -11,8 +11,12 @@ __pycache__/
 # Distribution / packaging
 .Python
 build/
+backup/
 develop-eggs/
 dist/
+QGIS-Kategorisierung/
+data/
+cache/
 downloads/
 eggs/
 .eggs/
