@@ -499,13 +499,13 @@ class Assessor():
 
             return cat
 
-    def assess(self, osm_df):
+    def assess(self, osm_df, sides="single"):
         try:
             prepared_data = self._prepare_way(osm_df)
 
             osm_infra = []
             for kante in tqdm(prepared_data, total=len(prepared_data)):
-                result = self.set_value(kante)
+                result = self.set_value(kante, sides=sides)
                 osm_infra.append(result)
             osm_df = osm_df.explode()
             osm_df['bicycle_infrastructure:forward'] = osm_infra
