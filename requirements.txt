@@ -1,7 +1,0 @@
-osmnx>=1.5
-networkx
-pandas
-geopandas
-pyyaml
-pyproj
-flask
