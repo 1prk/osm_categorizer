@@ -13,7 +13,7 @@ Die Library wird durch [Poetry](https://python-poetry.org/) verwaltet.
 Die Installation erfolgt über die Git-Repo:
 
 ```
-git clone https://gitlab.mn.tu-dresden.de/s8694901/osm-kategorisierung.git
+git clone -b radsim https://github.com/1prk/osm_categorizer.git
 cd osm-categorizer
 poetry install
 ```
