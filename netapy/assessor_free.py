@@ -6,23 +6,9 @@ import geopandas as gpd
 from netapy import defaults
 from tqdm import tqdm
 
-import functools
-import logging
-
-def error_handler(func):
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except Exception as e:
-            logging.error(f"Error in {func.__name__}: {str(e)}")
-            # You can choose to re-raise the exception or return a default value
-            raise ValueError
-    return wrapper
-
 class Assessor():
 
-    def __init__(self, osm_df=None):
+    def __init__(self):
         self.STREET_KEYS = defaults.NETASCORE_STREET_KEYS.copy()
         self.STREET_KEYS.append("reversed")
 
@@ -218,9 +204,6 @@ class Assessor():
         # dropcol = [col for col in NETASCORE_STREET_KEYS if col in sr_buffer_tags.columns]
         # sr_buffer_tags = sr_buffer_tags[dropcol]
         raise NotImplementedError
-
-    #@error_handler
-
 
     def set_value(self, x, sides = "double"):
         if not isinstance(x, dict):
@@ -460,7 +443,7 @@ class Assessor():
         else:
             assert(sides == "single")
 
-            @error_handler
+
             def get_infra(x):
                 if ('access' in x.values() and self.is_not_accessible(x)) or ('tram' in x.values() and x['tram'] == 'yes'):
                     return 'no'  # unpacked from "service"
