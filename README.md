@@ -20,6 +20,8 @@ poetry install
 
 ## Nutzung
 
+Für ein konkretes Anwendungsbeispiel siehe `main.py`
+
 Der Assessor erwartet ein OSM-Netz in Form einer (Geo-)DataFrame.
 Dies lässt sich mittels PyrOSM erzeugen.
 
