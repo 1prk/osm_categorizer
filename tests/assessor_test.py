@@ -9,10 +9,6 @@ from unittest.mock import MagicMock
 from netapy.assessors import NetascoreAssessor
 from netapy.defaults import NETASCORE_STREET_KEYS
 
-
-# Import your class here
-# from your_module import NetascoreAssessor
-
 class TestNetascoreAssessorSetValuesMethod(unittest.TestCase):
     def setUp(self):
         api = overpy.Overpass()
@@ -20,7 +16,7 @@ class TestNetascoreAssessorSetValuesMethod(unittest.TestCase):
         #test erfolt mit mehreren edge-cases anhand der OSM-way-id
         # 1: muss bicycle_way_mit_
         # 2: muss bicycle_way_mit
-        ways = [1169162410, 1251147753]
+        ways = [150234369]
         ways_str = ','.join(str(x) for x in ways)
         query = f'way(id:{ways_str});out;'
         result = api.query(query)

@@ -90,7 +90,7 @@ class Assessor():
         self.is_path_not_forbidden = lambda x: ((x["highway"] in ["cycleway", "track", "path"])
                                            and not self.cannot_bike(x))
 
-        self.is_bikepath_right = lambda x: (x["highway"] == "cycleway"
+        self.is_bikepath_right = lambda x: (x.get("highway") in ["cycleway"]
                                        or (any(
                     key for key, value in x.items() if 'right:bicycle' in key and value in ['designated'])
                                            and not any(key for key, value in x.items() if key == 'cycleway:right:lane'))
@@ -99,7 +99,7 @@ class Assessor():
                                        or x.get("cycleway:both") in ["track", "sidepath", "crossing"]
                                        or any(
                     key for key, value in x.items() if 'right:traffic_sign' in key and value in ['237']))
-        self.is_bikepath_left = lambda x: (x["highway"] == "cycleway"
+        self.is_bikepath_left = lambda x: (x.get("highway") in ["cycleway"]
                                       or (any(
                     key for key, value in x.items() if 'left:bicycle' in key and value in ['designated'])
                                           and not any(key for key, value in x.items() if key == 'cycleway:left:lane'))
@@ -156,8 +156,10 @@ class Assessor():
     def _prepare_way(self, way_dict):
         if isinstance(way_dict, gpd.GeoDataFrame):
             if 'tags' in way_dict.columns:
-                way_gdf = self._assess_directionality(way_dict) # explodes gdf and assesses whether linestrings are reversed or not
+                #way_gdf = self._assess_directionality(way_dict) # explodes gdf and assesses whether linestrings are reversed or not
+                way_gdf = way_dict
                 way_gdf['tags'] = way_gdf['tags'].apply(json.loads)
+                way_gdf.reset_index(drop=True, inplace=True)
                 way_n = pd.concat([way_gdf, pd.json_normalize(way_gdf['tags'])], axis=1)
                 way_n = way_n[way_n.columns.intersection(self.STREET_KEYS)]
                 way_dictionary = way_n.to_dict('records')
@@ -507,7 +509,7 @@ class Assessor():
             for kante in tqdm(prepared_data, total=len(prepared_data)):
                 result = self.set_value(kante, sides=sides)
                 osm_infra.append(result)
-            osm_df = osm_df.explode()
+            #osm_df = osm_df.explode()
             osm_df['bicycle_infrastructure:forward'] = osm_infra
             return osm_df
 
