@@ -76,7 +76,7 @@ OSM_STREET_KEYS = [
 ]
 
 def derive_bicycle_infrastructure(x):
-    is_reversed = x["reversed"]
+    #is_reversed = x["reversed"]
 
     is_segregated = any(key for key, value in x.items() if
                         'segregated' in key and value == 'yes')
@@ -395,6 +395,8 @@ def derive_bicycle_infrastructure(x):
     # making sure that the variable cat has been filled
     assert (isinstance(cat, str))
 
+
+    """ #old, from when we thought that "reversed" is part of OSM
     if ("_both" in cat) or (cat in ["no", "cycle_highway", "bicycle_road", "path_not_forbidden", "service"]):
         return cat
     else:
@@ -408,6 +410,8 @@ def derive_bicycle_infrastructure(x):
 
             res = cat.split()
             return res[0] + sides[1] + res[1] + sides[0]
+    """
+    return cat
 
 if __name__ == "__main__":
     osm_file = pyrosm.OSM("../Bietigheim-Bissingen_osm.osm.pbf")

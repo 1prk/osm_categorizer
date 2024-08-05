@@ -10,10 +10,10 @@ class Assessor():
 
     def __init__(self):
         self.STREET_KEYS = defaults.NETASCORE_STREET_KEYS.copy()
-        self.STREET_KEYS.append("reversed")
+        #self.STREET_KEYS.append("reversed")
 
         # Conditions as objects
-        self.is_reversed = lambda x: x["reversed"] if "reversed" in x else False
+        #self.is_reversed = lambda x: x["reversed"] if "reversed" in x else False
         self.is_segregated = lambda x: any(key for key, value in x.items() if
                                       'segregated' in key and value == 'yes')  # and no "nos" in segregated, zB 4746913 hat cycleway:left:segregated = no !
         self.is_footpath = lambda x: x["highway"] in ["footway", "pedestrian"]
@@ -190,7 +190,7 @@ class Assessor():
         way_gdf_exp = way_gdf.explode().reset_index().drop(columns=['level_0', 'level_1'])
         way_gdf_exp['start_point'] = way_gdf_exp['geometry'].apply(lambda x: list(x.coords)[0])
         way_gdf_exp['end_point'] = way_gdf_exp['geometry'].apply(lambda x: list(x.coords)[1])
-        way_gdf_exp['reversed'] = way_gdf_exp.apply(lambda x: x['end_point'] < x['start_point'], axis=1)
+        #way_gdf_exp['reversed'] = way_gdf_exp.apply(lambda x: x['end_point'] < x['start_point'], axis=1)
         return way_gdf_exp
 
     #optional:
@@ -427,6 +427,7 @@ class Assessor():
             # making sure that the variable cat has been filled
             assert (isinstance(cat, str))
 
+            """ #old, from when we thought that "reversed" is part of OSM
             if ("_both" in cat) or (
                     cat in ["no", "cycle_highway", "bicycle_road", "path_not_forbidden", "service_misc"]):
                 return cat
@@ -441,6 +442,8 @@ class Assessor():
 
                     res = cat.split()
                     return res[0] + sides[1] + res[1] + sides[0]
+            """
+            return cat
 
         else:
             assert(sides == "single")
