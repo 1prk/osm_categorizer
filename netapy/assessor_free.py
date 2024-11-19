@@ -16,7 +16,7 @@ class Assessor():
         #self.is_reversed = lambda x: x["reversed"] if "reversed" in x else False
         self.is_segregated = lambda x: any(key for key, value in x.items() if
                                       'segregated' in key and value == 'yes')  # and no "nos" in segregated, zB 4746913 hat cycleway:left:segregated = no !
-        self.is_footpath = lambda x: x["highway"] in ["footway", "pedestrian"]
+        self.is_footpath = lambda x: x["highway"] in ["footway", "pedestrian"] #ML, to rename to "is_footway" and group it with "is_path" and "is_track" below
         self.is_not_accessible = lambda x: x.get("access") == "no"
         self.use_sidepath = lambda x: any(key for key, value in x.items() if 'bicycle' in key and value == 'use_sidepath')
 
@@ -115,6 +115,15 @@ class Assessor():
                                           or (self.is_path(x) and self.can_walk_right(x) and not self.can_bike(x) and not self.is_indoor(x)))
         self.is_pedestrian_left = lambda x: ((self.is_footpath(x) and not self.can_bike(x) and not self.is_indoor(x))
                                         or (self.is_path(x) and self.can_walk_left(x) and not self.can_bike(x) and not self.is_indoor(x)))
+
+        self.is_shared_with_mit_right = lambda x: (x.get("cycleway") in ["shared_lane"]
+                                            or x.get("cycleway:right") in ["shared_lane"]
+                                            or x.get("cycleway:both") in ["shared_lane"])
+
+        self.is_shared_with_mit_left = lambda x: (x.get("cycleway") in ["shared_lane"]
+                                            or x.get("cycleway:left") in ["shared_lane"]
+                                            or x.get("cycleway:both") in ["shared_lane"])
+
         ### Begin categories
 
 
@@ -124,15 +133,15 @@ class Assessor():
         self.is_bikeroad = lambda x: (x.get("bicycle_road") == "yes" or x.get("cyclestreet") == "yes")
 
         ##Straßenbegleitender Radweg benutzungspflichtig
-        self.is_bikelane_right = lambda x: (x.get("cycleway") in ["lane", "shared_lane"]
-                                       or x.get("cycleway:right") in ["lane", "shared_lane"]
-                                       or x.get("cycleway:both") in ["lane", "shared_lane"]
+        self.is_bikelane_right = lambda x: (x.get("cycleway") in ["lane"] #ML: "shared_lane" removed, moved to the "is_shared_with_mit" condition
+                                       or x.get("cycleway:right") in ["lane"]
+                                       or x.get("cycleway:both") in ["lane"]
                                        or any(
                     key for key, value in x.items() if 'right:lane' in key and value in ['exclusive']))
 
-        self.is_bikelane_left = lambda x: (x.get("cycleway") in ["lane", "shared_lane"]
-                                      or x.get("cycleway:left") in ["lane", "shared_lane"]
-                                      or x.get("cycleway:both") in ["lane", "shared_lane"]
+        self.is_bikelane_left = lambda x: (x.get("cycleway") in ["lane"]
+                                      or x.get("cycleway:left") in ["lane"]
+                                      or x.get("cycleway:both") in ["lane"]
                                       or any(
                     key for key, value in x.items() if 'left:lane' in key and value in ['exclusive']))
 
@@ -221,7 +230,7 @@ class Assessor():
             self.is_bikepath_right(x) and self.is_segregated(x),  # 0 and 2
             self.can_bike(x) and (self.is_path(x) or self.is_track(x)) and not self.can_walk_right(x),  # and not is_footpath, #3, 4, 1
             self.can_bike(x) and (self.is_track(x) or self.is_footpath(x) or self.is_path(x)) and self.is_segregated(x),  # b_way_right_5 #3, 6, 2
-            self.can_bike(x) and self.is_obligated_segregated(x),  # 3,7
+            self.can_bike(x) and self.is_obligated_segregated(x),  # 3,7 #ML here the idea was to remove the "can_bike" condition, due to redundancy
             self.is_bicycle_designated_right and self.is_pedestrian_designated_right(x) and self.is_segregated(x)
         ]
 
@@ -230,7 +239,7 @@ class Assessor():
             self.is_bikepath_left(x) and self.is_segregated(x),  # 0 and 2
             self.can_bike(x) and (self.is_path(x) or self.is_track(x)) and not self.can_walk_left(x),  # and not is_footpath, #3, 4, 1
             self.can_bike(x) and (self.is_track(x) or self.is_footpath(x) or self.is_path(x)) and self.is_segregated(x),  # b_way_right_5 #3, 6, 2
-            self.can_bike(x) and self.is_obligated_segregated(x),  # 3,7
+            self.can_bike(x) and self.is_obligated_segregated(x),  # 3,7 #ML here the idea was to remove the "can_bike" condition, due to redundancy
             self.is_bicycle_designated_left and self.is_pedestrian_designated_left(x) and self.is_segregated(x)
         ]
 
@@ -252,10 +261,12 @@ class Assessor():
         conditions_mit_right = [
             self.can_cardrive(x) and not self.is_bikepath_right(x) and not self.is_bikeroad(x) and not self.is_footpath(x) and not self.is_bikelane_right(x) and not self.is_buslane_right(x)
             and not self.is_path(x) and not self.is_track(x) and not self.cannot_bike(x),
+            #self.is_shared_with_mit_right(x) #ML can it be incorporated directly or should it be joined with other conditions? IMO it is self-sufficient.
         ]
         conditions_mit_left = [
             self.can_cardrive(x) and not self.is_bikepath_left(x) and not self.is_bikeroad(x) and not self.is_footpath(x) and not self.is_bikelane_left(x) and not self.is_buslane_left(x)
             and not self.is_path(x) and not self.is_track(x) and not self.cannot_bike(x),
+            # self.is_shared_with_mit_left(x)
         ]
 
         # ##infrastructure designated for pedestrians
@@ -504,7 +515,9 @@ class Assessor():
 
             return cat
 
-    def assess(self, osm_df, sides="single"):
+    def assess(self, osm_df, sides="single"): #ML do we need the "sides"? I think it is a nice addition, it can stay IMO.
+        #todo: change to bool
+        #ML the new argument should be called "aggregate_no". This way it fits better with the process -> we first classify the disaggregated and THEN make the decision to aggregate or not
         try:
             prepared_data = self._prepare_way(osm_df)
 
@@ -513,7 +526,7 @@ class Assessor():
                 result = self.set_value(kante, sides=sides)
                 osm_infra.append(result)
             #osm_df = osm_df.explode()
-            osm_df['bicycle_infrastructure:forward'] = osm_infra
+            osm_df['bicycle_infrastructure:forward'] = osm_infra #ML a different name for the column, e.g., "bicycle_infrastructure_category" or similar
             return osm_df
 
         except Exception as e:

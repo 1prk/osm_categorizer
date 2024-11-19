@@ -123,6 +123,7 @@ def derive_bicycle_infrastructure(x):
     is_bicycle_designated_left = ((is_designated or
                                    (x.get("cycleway:left:bicycle") == "designated")) or
                                   (x.get("cycleway:bicycle") == "designated"))
+
     is_bicycle_designated_right = (is_designated or
                                    (x.get("cycleway:right:bicycle") == "designated") or
                                    (x.get("cycleway:bicycle") == "designated"))
@@ -130,6 +131,7 @@ def derive_bicycle_infrastructure(x):
     is_pedestrian_designated_left = (x["foot"] == "designated" or
                                      x.get("sidewalk:left:foot") == "designated" or
                                      x.get("sidewalk:foot") == "designated")
+
     is_pedestrian_designated_right = (x["foot"] == "designated" or
                                       x.get("sidewalk:right:foot") == "designated" or
                                       x.get("sidewalk:foot") == "designated")
@@ -141,6 +143,7 @@ def derive_bicycle_infrastructure(x):
                          or x["cycleway:right"] in ["track", "sidepath", "crossing"]
                          or x["cycleway:both"] in ["track", "sidepath", "crossing"]
                          or any(key for key, value in x.items() if 'right:traffic_sign' in key and value in ['237']))
+
     is_bikepath_left = (x["highway"] == "cycleway"
                         or (any(key for key, value in x.items() if 'left:bicycle' in key and value in ['designated'])
                             and not any(key for key, value in x.items() if key == 'cycleway:left:lane'))
