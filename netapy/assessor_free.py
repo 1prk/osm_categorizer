@@ -16,13 +16,16 @@ class Assessor():
         #self.is_reversed = lambda x: x["reversed"] if "reversed" in x else False
         self.is_segregated = lambda x: any(key for key, value in x.items() if
                                       'segregated' in key and value == 'yes')  # and no "nos" in segregated, zB 4746913 hat cycleway:left:segregated = no !
-        self.is_footpath = lambda x: x["highway"] in ["footway", "pedestrian"] #ML, to rename to "is_footway" and group it with "is_path" and "is_track" below
+        
         self.is_not_accessible = lambda x: x.get("access") == "no"
         self.use_sidepath = lambda x: any(key for key, value in x.items() if 'bicycle' in key and value == 'use_sidepath')
 
         self.is_indoor = lambda x: x.get('indoor') == 'yes'
+        
         self.is_path = lambda x: x["highway"] in ["path"]
         self.is_track = lambda x: x["highway"] in ["track"]
+        self.is_footway = lambda x: x["highway"] in ["footway", "pedestrian"]  # ML, to rename to "is_footway" and group it with "is_path" and "is_track" below
+                        # or is traffic_sign 239 or 242.1
 
         self.can_walk_right = lambda x: (x.get("foot") in ["yes", "designated"]
                                     or any(
@@ -50,6 +53,30 @@ class Assessor():
                 or ('traffic_sign:forward' in x.keys() and isinstance(x['traffic_sign:forward'], str) and '241' in x[
             'traffic_sign:forward'])
         )
+
+        self.is_obligated_shared = lambda x: (
+            ('traffic_sign' in x.keys() and isinstance(x['traffic_sign'], str) and ('240' in x['traffic_sign']))
+            or ('traffic_sign:forward' in x.keys() and isinstance(x['traffic_sign:forward'], str) and (
+                        '240' in x['traffic_sign:forward']))
+        )
+
+        ### begin traffic signs helpers
+        self._is_sign_free_for_bicycle_use = lambda x: (
+                ('traffic_sign' in x.keys() and isinstance(x['traffic_sign'], str) and '1022-10' in x['traffic_sign'])
+                or ('traffic_sign:forward' in x.keys() and isinstance(x['traffic_sign:forward'], str) and '1022-10' in x[
+            'traffic_sign:forward'])
+        )
+
+        self._is_sign_buslane = lambda x: ('traffic_sign' in x.keys() and isinstance(x['traffic_sign'], str) and '245' in x['traffic_sign']
+                                           or 'traffic_sign:forward' in x.keys() and isinstance(x['traffic_sign:forward'], str) and '245' in x['traffic_sign:forward'])
+
+        self._is_sign_footway = lambda x: (('traffic_sign' in x.keys() and isinstance(x['traffic_sign'], str) and ('239' in x['traffic_sign'] or '242.1' in x['traffic_sign']))
+                                           or ('traffic_sign:forward' in x.keys() and isinstance(x['traffic_sign:forward'], str) and ('239' in x['traffic_sign:forward'] or '242.1' in x['traffic_sign:forward'])))
+
+        self.is_sign_shared_way = lambda x: self._is_sign_footway(x) and self._is_sign_free_for_bicycle_use(x)
+        self.is_sign_shared_buslane = lambda x: self._is_sign_buslane(x) and self._is_sign_free_for_bicycle_use(x)
+
+        ### end traffic signs helpers
 
         self.is_designated = lambda x: x.get("bicycle") == "designated"
 
@@ -98,7 +125,7 @@ class Assessor():
                                        or x.get("cycleway:right") in ["track", "sidepath", "crossing"]
                                        or x.get("cycleway:both") in ["track", "sidepath", "crossing"]
                                        or any(
-                    key for key, value in x.items() if 'right:traffic_sign' in key and value in ['237']))
+                    key for key, value in x.items() if 'right:traffic_sign' in key and value in ['237'])) #ML this can be used here as we query the bicycle way first
         self.is_bikepath_left = lambda x: (x.get("highway") in ["cycleway"]
                                       or (any(
                     key for key, value in x.items() if 'left:bicycle' in key and value in ['designated'])
@@ -107,13 +134,13 @@ class Assessor():
                                       or x.get("cycleway:left") in ["track", "sidepath", "crossing"]
                                       or x.get("cycleway:both") in ["track", "sidepath", "crossing"]
                                       or any(
-                    key for key, value in x.items() if 'left:traffic_sign' in key and value in ['237']))
+                    key for key, value in x.items() if 'left:traffic_sign' in key and value in ['237'])) #ML this can be used here as we query the bicycle way first
 
         ##infrastructure designated for pedestrians
 
-        self.is_pedestrian_right = lambda x: ((self.is_footpath(x) and not self.can_bike(x) and not self.is_indoor(x))
+        self.is_pedestrian_right = lambda x: ((self.is_footway(x) and not self.can_bike(x) and not self.is_indoor(x))
                                           or (self.is_path(x) and self.can_walk_right(x) and not self.can_bike(x) and not self.is_indoor(x)))
-        self.is_pedestrian_left = lambda x: ((self.is_footpath(x) and not self.can_bike(x) and not self.is_indoor(x))
+        self.is_pedestrian_left = lambda x: ((self.is_footway(x) and not self.can_bike(x) and not self.is_indoor(x))
                                         or (self.is_path(x) and self.can_walk_left(x) and not self.can_bike(x) and not self.is_indoor(x)))
 
         self.is_shared_with_mit_right = lambda x: (x.get("cycleway") in ["shared_lane"]
@@ -127,33 +154,47 @@ class Assessor():
         ### Begin categories
 
 
-        self.is_cycle_highway = lambda x: (x.get("cycle_highway") == "yes")
+        self.is_cycle_highway = lambda x: (x.get("cycle_highway") == "yes"
+
+                                           or x.get("traffic_sign") == "350.1"
+                                           or x.get("traffic_sign:forward") == "350.1")
 
         ##bicycle_road
-        self.is_bikeroad = lambda x: (x.get("bicycle_road") == "yes" or x.get("cyclestreet") == "yes")
+        self.is_bikeroad = lambda x: (x.get("bicycle_road") == "yes"
+                                      or x.get("cyclestreet") == "yes"
+                                      or x.get("traffic_sign") in ["244.1", "244.3"]
+                                      or x.get("traffic_sign:forward") in ["244.1", "244.3"])
 
         ##Straßenbegleitender Radweg benutzungspflichtig
         self.is_bikelane_right = lambda x: (x.get("cycleway") in ["lane"] #ML: "shared_lane" removed, moved to the "is_shared_with_mit" condition
                                        or x.get("cycleway:right") in ["lane"]
                                        or x.get("cycleway:both") in ["lane"]
                                        or any(
-                    key for key, value in x.items() if 'right:lane' in key and value in ['exclusive']))
+                    key for key, value in x.items() if 'right:lane' in key and value in ['exclusive'])
+                                       or any(
+                    key for key, value in x.items() if 'right:traffic_sign' in key and value in ['237'])) #ML - is this correct?
 
         self.is_bikelane_left = lambda x: (x.get("cycleway") in ["lane"]
                                       or x.get("cycleway:left") in ["lane"]
                                       or x.get("cycleway:both") in ["lane"]
                                       or any(
-                    key for key, value in x.items() if 'left:lane' in key and value in ['exclusive']))
+                    key for key, value in x.items() if 'left:lane' in key and value in ['exclusive'])
+                                      or any(
+                    key for key, value in x.items() if 'left:traffic_sign' in key and value in ['237']))  # ML - is this correct?
 
         ##schutzstreifen/radfahrstreifen
         ##bus
-        self.is_buslane_right = lambda x: (x.get("cycleway") == "share_busway"
+        self.is_shared_buslane_right = lambda x: (x.get("cycleway") == "share_busway"
                                       or x.get("cycleway:right") == "share_busway"
-                                      or x.get("cycleway:both") == "share_busway")
-        self.is_buslane_left = lambda x: (x.get("cycleway") == "share_busway"
-                                     or x.get("cycleway:left") == "share_busway"
-                                     or x.get("cycleway:both") == "share_busway")
+                                      or x.get("cycleway:both") == "share_busway"
 
+                                      or self.is_sign_shared_buslane(x))
+
+        self.is_shared_buslane_left = lambda x: (x.get("cycleway") == "share_busway"
+                                     or x.get("cycleway:left") == "share_busway"
+                                     or x.get("cycleway:both") == "share_busway"
+
+                                     or self.is_sign_shared_buslane(x))
     def test_osm_way(self, osm_id):
         overpass_api = overpy.Overpass()
         overpass_query = f"way({osm_id});(._;>;);out body;"
@@ -216,7 +257,7 @@ class Assessor():
         # sr_buffer_tags = sr_buffer_tags[dropcol]
         raise NotImplementedError
 
-    def set_value(self, x, sides = "double"):
+    def set_value(self, x, single = False):
         if not isinstance(x, dict):
             raise TypeError("rowwise OSM data should be a dict")
 
@@ -228,55 +269,61 @@ class Assessor():
         conditions_b_way_right = [
             self.is_bikepath_right(x) and not self.can_walk_right(x),  # 0 and 1
             self.is_bikepath_right(x) and self.is_segregated(x),  # 0 and 2
-            self.can_bike(x) and (self.is_path(x) or self.is_track(x)) and not self.can_walk_right(x),  # and not is_footpath, #3, 4, 1
-            self.can_bike(x) and (self.is_track(x) or self.is_footpath(x) or self.is_path(x)) and self.is_segregated(x),  # b_way_right_5 #3, 6, 2
-            self.can_bike(x) and self.is_obligated_segregated(x),  # 3,7 #ML here the idea was to remove the "can_bike" condition, due to redundancy
+            self.can_bike(x) and (self.is_path(x) or self.is_track(x)) and not self.can_walk_right(x),  # and not is_footway, #3, 4, 1
+            self.can_bike(x) and (self.is_track(x) or self.is_footway(x) or self.is_path(x)) and self.is_segregated(x),  # b_way_right_5 #3, 6, 2
+            self.is_obligated_segregated(x),# and self.can_bike(x),  # 3,7 #ML here the idea was to remove the "can_bike" condition, due to redundancy
             self.is_bicycle_designated_right and self.is_pedestrian_designated_right(x) and self.is_segregated(x)
         ]
 
         conditions_b_way_left = [
             self.is_bikepath_left(x) and not self.can_walk_left(x),  # 0 and 1
             self.is_bikepath_left(x) and self.is_segregated(x),  # 0 and 2
-            self.can_bike(x) and (self.is_path(x) or self.is_track(x)) and not self.can_walk_left(x),  # and not is_footpath, #3, 4, 1
-            self.can_bike(x) and (self.is_track(x) or self.is_footpath(x) or self.is_path(x)) and self.is_segregated(x),  # b_way_right_5 #3, 6, 2
-            self.can_bike(x) and self.is_obligated_segregated(x),  # 3,7 #ML here the idea was to remove the "can_bike" condition, due to redundancy
+            self.can_bike(x) and (self.is_path(x) or self.is_track(x)) and not self.can_walk_left(x),  # and not is_footway, #3, 4, 1
+            self.can_bike(x) and (self.is_track(x) or self.is_footway(x) or self.is_path(x)) and self.is_segregated(x),  # b_way_right_5 #3, 6, 2
+            self.is_obligated_segregated(x),# and self.can_bike(x),  # 3,7 #ML here the idea was to remove the "can_bike" condition, due to redundancy
             self.is_bicycle_designated_left and self.is_pedestrian_designated_left(x) and self.is_segregated(x)
         ]
 
-        # Second option: "mixed_way"
-        ##mixed
-        conditions_mixed_right = [
+        # Second option: "shared_way"
+        ##shared
+        conditions_shared_right = [
             self.is_bikepath_right(x) and self.can_walk_right(x) and not self.is_segregated(x),  # 0 and 1 and 2
-            self.is_footpath(x) and self.can_bike(x) and not self.is_segregated(x),  # 3 and 4 and 2
-            (self.is_path(x) or self.is_track(x)) and self.can_bike(x) and self.can_walk_right(x) and not self.is_segregated(x)  # 5 and 4 and 1 and 2
+            self.is_footway(x) and self.can_bike(x) and not self.is_segregated(x),  # 3 and 4 and 2
+            (self.is_path(x) or self.is_track(x)) and self.can_bike(x) and self.can_walk_right(x) and not self.is_segregated(x),  # 5 and 4 and 1 and 2
+
+            self.is_sign_shared_way(x),
+            self.is_obligated_shared(x)
         ]
-        conditions_mixed_left = [
+        conditions_shared_left = [
             self.is_bikepath_left(x) and self.can_walk_left(x) and not self.is_segregated(x),  # 0 and 1 and 2
-            self.is_footpath(x) and self.can_bike(x) and not self.is_segregated(x),  # 3 and 4 and 2
-            (self.is_path(x) or self.is_track(x)) and self.can_bike(x) and self.can_walk_left(x) and not self.is_segregated(x)  # 5 and 4 and 1 and 2
+            self.is_footway(x) and self.can_bike(x) and not self.is_segregated(x),  # 3 and 4 and 2
+            (self.is_path(x) or self.is_track(x)) and self.can_bike(x) and self.can_walk_left(x) and not self.is_segregated(x),  # 5 and 4 and 1 and 2
+
+            self.is_sign_shared_way(x),
+            self.is_obligated_shared(x)
         ]
 
         # Add. Option: mit_road
         ##mit
         conditions_mit_right = [
-            self.can_cardrive(x) and not self.is_bikepath_right(x) and not self.is_bikeroad(x) and not self.is_footpath(x) and not self.is_bikelane_right(x) and not self.is_buslane_right(x)
+            self.can_cardrive(x) and not self.is_bikepath_right(x) and not self.is_bikeroad(x) and not self.is_footway(x) and not self.is_bikelane_right(x) and not self.is_shared_buslane_right(x)
             and not self.is_path(x) and not self.is_track(x) and not self.cannot_bike(x),
-            #self.is_shared_with_mit_right(x) #ML can it be incorporated directly or should it be joined with other conditions? IMO it is self-sufficient.
+            self.is_shared_with_mit_right(x) #ML can it be incorporated directly or should it be joined with other conditions? IMO it is self-sufficient.
         ]
         conditions_mit_left = [
-            self.can_cardrive(x) and not self.is_bikepath_left(x) and not self.is_bikeroad(x) and not self.is_footpath(x) and not self.is_bikelane_left(x) and not self.is_buslane_left(x)
+            self.can_cardrive(x) and not self.is_bikepath_left(x) and not self.is_bikeroad(x) and not self.is_footway(x) and not self.is_bikelane_left(x) and not self.is_shared_buslane_left(x)
             and not self.is_path(x) and not self.is_track(x) and not self.cannot_bike(x),
-            # self.is_shared_with_mit_left(x)
+            self.is_shared_with_mit_left(x)
         ]
 
         # ##infrastructure designated for pedestrians
-        # is_pedestrian_right = lambda x: ((self.is_footpath(x) and not self.can_bike(x) and not self.is_indoor(x))
+        # is_pedestrian_right = lambda x: ((self.is_footway(x) and not self.can_bike(x) and not self.is_indoor(x))
         #                                  or (self.is_path(x) and self.can_walk_right(x) and not self.can_bike(x) and not self.is_indoor(x)))  # alternatively: (is_path or is_track)?
         #
-        # is_pedestrian_left = lambda x: ((self.is_footpath(x) and not self.can_bike(x) and not self.is_indoor(x))
+        # is_pedestrian_left = lambda x: ((self.is_footway(x) and not self.can_bike(x) and not self.is_indoor(x))
         #                                 or (self.is_path(x) and self.can_walk_left(x) and not self.can_bike(x) and not self.is_indoor(x)))  # alternatively: (is_path or is_track)?
 
-        if sides == "double":
+        if not single:
             def get_infra(x):
 
                 if ('access' in x.values() and self.is_not_accessible(x)) or ('tram' in x.values() and x['tram'] == 'yes'):
@@ -299,10 +346,10 @@ class Assessor():
                         return "bicycle_way_both"
                     elif self.is_bikelane_left(x):
                         return "bicycle_way_right_lane_left"
-                    elif self.is_buslane_left(x):
+                    elif self.is_shared_buslane_left(x):
                         return "bicycle_way_right_bus_left"
-                    elif any(conditions_mixed_left):
-                        return "bicycle_way_right_mixed_left"
+                    elif any(conditions_shared_left):
+                        return "bicycle_way_right_shared_left"
                     elif any(conditions_mit_left):
                         return "bicycle_way_right_mit_left"
                     elif self.is_pedestrian_left(x):
@@ -313,10 +360,10 @@ class Assessor():
                 elif any(conditions_b_way_left):
                     if self.is_bikelane_right(x):
                         return "bicycle_way_left_lane_right"
-                    elif self.is_buslane_right(x):
+                    elif self.is_shared_buslane_right(x):
                         return "bicycle_way_left_bus_right"
-                    elif any(conditions_mixed_right):
-                        return "bicycle_way_left_mixed_right"
+                    elif any(conditions_shared_right):
+                        return "bicycle_way_left_shared_right"
                     elif any(conditions_mit_right):
                         return "bicycle_way_left_mit_right"
                     elif self.is_pedestrian_right(x):
@@ -328,10 +375,10 @@ class Assessor():
                 elif self.is_bikelane_right(x):
                     if self.is_bikelane_left(x):
                         return "bicycle_lane_both"
-                    elif self.is_buslane_left(x):
+                    elif self.is_shared_buslane_left(x):
                         return "bicycle_lane_right_bus_left"
-                    elif any(conditions_mixed_left):
-                        return "bicycle_lane_right_mixed_left"
+                    elif any(conditions_shared_left):
+                        return "bicycle_lane_right_shared_left"
                     elif any(conditions_mit_left):
                         return "bicycle_lane_right_mit_left"
                     elif self.is_pedestrian_left(x):
@@ -340,10 +387,10 @@ class Assessor():
                         return "bicycle_lane_right_no_left"
 
                 elif self.is_bikelane_left(x):
-                    if self.is_buslane_right(x):
+                    if self.is_shared_buslane_right(x):
                         return "bicycle_lane_left_bus_right"
-                    elif any(conditions_mixed_right):
-                        return "bicycle_lane_left_mixed_right"
+                    elif any(conditions_shared_right):
+                        return "bicycle_lane_left_shared_right"
                     elif any(conditions_mit_right):
                         return "bicycle_lane_left_mit_right"
                     elif self.is_pedestrian_right(x):
@@ -352,11 +399,11 @@ class Assessor():
                         return "bicycle_lane_left_no_right"
 
                 #### 5 # Fourth option: "bus_lane"
-                elif self.is_buslane_right(x):
-                    if self.is_buslane_left(x):
+                elif self.is_shared_buslane_right(x):
+                    if self.is_shared_buslane_left(x):
                         return "bus_lane_both"
-                    elif any(conditions_mixed_left):
-                        return "bus_lane_right_mixed_left"
+                    elif any(conditions_shared_left):
+                        return "bus_lane_right_shared_left"
                     elif any(conditions_mit_left):
                         return "bus_lane_right_mit_left"
                     elif self.is_pedestrian_left(x):
@@ -364,9 +411,9 @@ class Assessor():
                     else:
                         return "bus_lane_right_no_left"
 
-                elif self.is_buslane_left(x):
-                    if any(conditions_mixed_right):
-                        return "bus_lane_left_mixed_right"
+                elif self.is_shared_buslane_left(x):
+                    if any(conditions_shared_right):
+                        return "bus_lane_left_shared_right"
                     elif any(conditions_mit_right):
                         return "bus_lane_left_mit_right"
                     elif self.is_pedestrian_right(x):
@@ -376,23 +423,23 @@ class Assessor():
 
 
                 #### 2
-                elif any(conditions_mixed_right):
-                    if any(conditions_mixed_left):
-                        return "mixed_way_both"
+                elif any(conditions_shared_right):
+                    if any(conditions_shared_left):
+                        return "shared_way_both"
                     elif any(conditions_mit_left):
-                        return "mixed_way_right_mit_left"
+                        return "shared_way_right_mit_left"
                     elif self.is_pedestrian_left(x):
-                        return "mixed_way_right_pedestrian_left"
+                        return "shared_way_right_pedestrian_left"
                     else:
-                        return "mixed_way_right_no_left"
+                        return "shared_way_right_no_left"
 
-                elif any(conditions_mixed_left):
+                elif any(conditions_shared_left):
                     if any(conditions_mit_right):
-                        return "mixed_way_left_mit_right"
+                        return "shared_way_left_mit_right"
                     elif self.is_pedestrian_right(x):
-                        return "mixed_way_left_pedestrian_right"
+                        return "shared_way_left_pedestrian_right"
                     else:
-                        return "mixed_way_left_no_right"
+                        return "shared_way_left_no_right"
 
                 #### 6
                 elif any(conditions_mit_right):
@@ -457,7 +504,7 @@ class Assessor():
             return cat
 
         else:
-            assert(sides == "single")
+            assert(single)
 
 
             def get_infra(x):
@@ -484,12 +531,12 @@ class Assessor():
                     return "bicycle_lane"
 
                 #### 5 # Fourth option: "bus_lane"
-                elif self.is_buslane_left(x) or self.is_buslane_right(x):
+                elif self.is_shared_buslane_left(x) or self.is_shared_buslane_right(x):
                     return "bus_lane"
 
                 #### 2
-                elif any(conditions_mixed_left) or any(conditions_mixed_right):
-                    return "mixed_way"
+                elif any(conditions_shared_left) or any(conditions_shared_right):
+                    return "shared_way"
 
                 #### 6
                 elif any(conditions_mit_left) or any(conditions_mit_right):
@@ -515,18 +562,63 @@ class Assessor():
 
             return cat
 
-    def assess(self, osm_df, sides="single"): #ML do we need the "sides"? I think it is a nice addition, it can stay IMO.
-        #todo: change to bool
+    def aggregate_the_no_infra_category(self, cat):
+        options = {"service_misc": "no",
+
+                   "bicycle_way_right_mit_left":         "bicycle_way_right_no_left",
+                   "bicycle_way_right_pedestrian_left":  "bicycle_way_right_no_left",
+                   "bicycle_way_left_mit_right":         "bicycle_way_left_no_right",
+                   "bicycle_way_left_pedestrian_right":  "bicycle_way_left_no_right",
+
+                   "bicycle_lane_right_mit_left":        "bicycle_lane_right_no_left",
+                   "bicycle_lane_right_pedestrian_left": "bicycle_lane_right_no_left",
+                   "bicycle_lane_left_mit_right":        "bicycle_lane_left_no_right",
+                   "bicycle_lane_left_pedestrian_right": "bicycle_lane_left_no_right",
+
+                   "bus_lane_right_mit_left":            "bus_lane_right_no_left",
+                   "bus_lane_right_pedestrian_left":     "bus_lane_right_no_left",
+                   "bus_lane_left_mit_right":            "bus_lane_left_no_right",
+                   "bus_lane_left_pedestrian_right":     "bus_lane_left_no_right",
+
+                   "shared_way_right_mit_left":           "shared_way_right_no_left",
+                   "shared_way_right_pedestrian_left":    "shared_way_right_no_left",
+                   "shared_way_left_mit_right":           "shared_way_left_no_right",
+                   "shared_way_left_pedestrian_right":    "shared_way_left_no_right",
+
+                   "mit_road_both":                      "no",
+                   "mit_road_right_pedestrian_left":     "no",
+                   "mit_road_right_no_left":             "no",
+                   "mit_road_left_pedestrian_right":     "no",
+                   "mit_road_left_no_right":             "no",
+
+                   "pedestrian_both":                    "no",
+                   "pedestrian_right_no_left":           "no",
+                   "pedestrian_left_no_right":           "no",
+                                                         
+                   "path_not_forbidden":                 "no",
+                   
+                   #remaining single categories
+                   "mit_road":   "no",
+                   "pedestrian": "no"
+                   }
+
+        return options[cat] if cat in options.keys() else cat
+
+    def assess(self, osm_df, single=False, aggregated=True): #ML
         #ML the new argument should be called "aggregate_no". This way it fits better with the process -> we first classify the disaggregated and THEN make the decision to aggregate or not
         try:
             prepared_data = self._prepare_way(osm_df)
 
             osm_infra = []
             for kante in tqdm(prepared_data, total=len(prepared_data)):
-                result = self.set_value(kante, sides=sides)
+                result = self.set_value(kante, single=single)
+
+                if aggregated:
+                    result = self.aggregate_the_no_infra_category(result)
+
                 osm_infra.append(result)
             #osm_df = osm_df.explode()
-            osm_df['bicycle_infrastructure:forward'] = osm_infra #ML a different name for the column, e.g., "bicycle_infrastructure_category" or similar
+            osm_df['bicycle_infrastructure_category'] = osm_infra #ML a different name for the column, e.g., "bicycle_infrastructure_category" or similar
             return osm_df
 
         except Exception as e:
