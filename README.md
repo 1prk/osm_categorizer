@@ -50,3 +50,8 @@ print(result.head())
 | mixed_way          | Mischverkehr ohne MIV   |
 | mit_road           | Mischverkehr im MIV     |
 | service_misc       | sonstige                |
+
+## Publikationen
+
+- **Łukawska, M., Richter, E., Porojkow, I., & Huber, S. (2025)**: *BikeNEAT: a framework for classifying bicycle infrastructure in OpenStreetMap.* Under Review in: Journal of Cycling and Micromobility Research.
+
