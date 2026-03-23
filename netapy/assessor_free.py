@@ -562,6 +562,71 @@ class Assessor():
 
             return cat
 
+    def _evaluate_indicators(self, x):
+        """
+        Evaluate all indicator functions for a given way.
+        Returns a dictionary of indicator names and their boolean values.
+        """
+        indicators = {
+            # Basic infrastructure types
+            'is_path': self.is_path(x),
+            'is_track': self.is_track(x),
+            'is_footway': self.is_footway(x),
+
+            # Physical attributes
+            'is_segregated': self.is_segregated(x),
+            'is_indoor': self.is_indoor(x),
+            'is_smooth': self.is_smooth(x),
+
+            # Access/permissions
+            'is_not_accessible': self.is_not_accessible(x),
+            'is_accessible': self.is_accessible(x),
+            'use_sidepath': self.use_sidepath(x),
+            'can_bike': self.can_bike(x),
+            'cannot_bike': self.cannot_bike(x),
+            'can_walk_right': self.can_walk_right(x),
+            'can_walk_left': self.can_walk_left(x),
+            'can_cardrive': self.can_cardrive(x),
+            'is_vehicle_allowed': self.is_vehicle_allowed(x),
+
+            # Designation
+            'is_designated': self.is_designated(x),
+            'is_bicycle_designated_left': self.is_bicycle_designated_left(x),
+            'is_bicycle_designated_right': self.is_bicycle_designated_right(x),
+            'is_pedestrian_designated_left': self.is_pedestrian_designated_left(x),
+            'is_pedestrian_designated_right': self.is_pedestrian_designated_right(x),
+
+            # Traffic signs
+            'is_obligated_segregated': self.is_obligated_segregated(x),
+            'is_obligated_shared': self.is_obligated_shared(x),
+            'is_sign_shared_way': self.is_sign_shared_way(x),
+            'is_sign_shared_buslane': self.is_sign_shared_buslane(x),
+
+            # Service/agricultural
+            'is_service_tag': self.is_service_tag(x),
+            'is_agricultural': self.is_agricultural(x),
+            'is_service': self.is_service(x),
+
+            # Infrastructure presence (left/right)
+            'is_bikepath_right': self.is_bikepath_right(x),
+            'is_bikepath_left': self.is_bikepath_left(x),
+            'is_bikelane_right': self.is_bikelane_right(x),
+            'is_bikelane_left': self.is_bikelane_left(x),
+            'is_shared_buslane_right': self.is_shared_buslane_right(x),
+            'is_shared_buslane_left': self.is_shared_buslane_left(x),
+            'is_shared_with_mit_right': self.is_shared_with_mit_right(x),
+            'is_shared_with_mit_left': self.is_shared_with_mit_left(x),
+            'is_pedestrian_right': self.is_pedestrian_right(x),
+            'is_pedestrian_left': self.is_pedestrian_left(x),
+            'is_path_not_forbidden': self.is_path_not_forbidden(x),
+
+            # Special categories
+            'is_cycle_highway': self.is_cycle_highway(x),
+            'is_bikeroad': self.is_bikeroad(x),
+        }
+
+        return indicators
+
     def aggregate_the_no_infra_category(self, cat):
         options = {"service_misc": "no",
 
@@ -594,9 +659,9 @@ class Assessor():
                    "pedestrian_both":                    "no",
                    "pedestrian_right_no_left":           "no",
                    "pedestrian_left_no_right":           "no",
-                                                         
+
                    "path_not_forbidden":                 "no",
-                   
+
                    #remaining single categories
                    "mit_road":   "no",
                    "pedestrian": "no"
@@ -604,12 +669,14 @@ class Assessor():
 
         return options[cat] if cat in options.keys() else cat
 
-    def assess(self, osm_df, single=False, aggregated=True): #ML
+    def assess(self, osm_df, single=False, aggregated=True, include_indicators=False): #ML
         #ML the new argument should be called "aggregate_no". This way it fits better with the process -> we first classify the disaggregated and THEN make the decision to aggregate or not
         try:
             prepared_data = self._prepare_way(osm_df)
 
             osm_infra = []
+            indicators_data = [] if include_indicators else None
+
             for kante in tqdm(prepared_data, total=len(prepared_data)):
                 result = self.set_value(kante, single=single)
 
@@ -617,8 +684,22 @@ class Assessor():
                     result = self.aggregate_the_no_infra_category(result)
 
                 osm_infra.append(result)
+
+                # Evaluate and store all indicators if requested
+                if include_indicators:
+                    indicators = self._evaluate_indicators(kante)
+                    indicators_data.append(indicators)
+
             #osm_df = osm_df.explode()
-            osm_df['bicycle_infrastructure_category'] = osm_infra #ML a different name for the column, e.g., "bicycle_infrastructure_category" or similar
+            osm_df['bicycle_infrastructure'] = osm_infra
+
+            # Add indicator columns if requested
+            if include_indicators and indicators_data:
+                indicators_df = pd.DataFrame(indicators_data)
+                # Add all indicator columns to the output dataframe
+                for col in indicators_df.columns:
+                    osm_df[col] = indicators_df[col].values
+
             return osm_df
 
         except Exception as e:

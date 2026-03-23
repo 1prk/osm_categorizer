@@ -20,7 +20,18 @@ if __name__ == "__main__":
 
 
     assessor = assessor_free.Assessor()
-    result = assessor.assess(osm, sides="double") #assessor.assess nimmt eine (geo)DATAFRAME
-    print(result.head())
-    print(result['bicycle_infrastructure:forward'].value_counts())
-    result.to_csv('Wedel_categories.csv') #hier wird die komplette geodataframe in eine CSV gespeichert.
+
+    # Option 1: Basic assessment without indicators
+    # result = assessor.assess(osm, single=True, aggregated=True, include_indicators=False)
+
+    # Option 2: Assessment WITH all 44 indicators (recommended for flexibility)
+    result = assessor.assess(osm, single=True, aggregated=True, include_indicators=True)
+
+    # Filter to relevant columns only
+    indicator_cols = [c for c in result.columns if c.startswith('is_') or c.startswith('can_') or c.startswith('use_')]
+    essential_cols = ['id', 'osm_type', 'geometry', 'highway', 'length', 'bicycle_infrastructure']
+
+    result_filtered = result[essential_cols + indicator_cols]
+    result_filtered.to_csv('Wedel_categories.csv')
+
+    print(f"Saved {len(result_filtered)} ways with {len(indicator_cols)} indicators")
