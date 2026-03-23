@@ -562,7 +562,7 @@ class Assessor():
 
             return cat
 
-    def _evaluate_indicators(self, x):
+    def _evaluate_indicators(self, x, in_cycling_relation=False):
         """
         Evaluate all indicator functions for a given way.
         Returns a dictionary of indicator names and their boolean values.
@@ -623,6 +623,9 @@ class Assessor():
             # Special categories
             'is_cycle_highway': self.is_cycle_highway(x),
             'is_bikeroad': self.is_bikeroad(x),
+
+            # Relation membership
+            'is_in_cycling_relation': in_cycling_relation,
         }
 
         return indicators
@@ -669,15 +672,51 @@ class Assessor():
 
         return options[cat] if cat in options.keys() else cat
 
-    def assess(self, osm_df, single=False, aggregated=True, include_indicators=False): #ML
+    def assess(self, osm_df, single=False, aggregated=True, include_indicators=False, pbf_file=None): #ML
         #ML the new argument should be called "aggregate_no". This way it fits better with the process -> we first classify the disaggregated and THEN make the decision to aggregate or not
         try:
+            # Extract cycling relation membership from PBF file if provided
+            cycling_way_ids = set()
+            if pbf_file is not None:
+                try:
+                    import osmium
+
+                    class RelationMemberHandler(osmium.SimpleHandler):
+                        def __init__(self):
+                            super().__init__()
+                            self.cycling_way_ids = set()
+
+                        def relation(self, r):
+                            tags = {t.k: t.v for t in r.tags}
+                            is_cycling = (
+                                tags.get('route') == 'bicycle' or
+                                tags.get('network') in ['lcn', 'rcn', 'ncn', 'icn'] or
+                                tags.get('bicycle') in ['yes', 'designated']
+                            )
+                            if is_cycling:
+                                for member in r.members:
+                                    if member.type == 'w':
+                                        self.cycling_way_ids.add(member.ref)
+
+                    handler = RelationMemberHandler()
+                    handler.apply_file(pbf_file)
+                    cycling_way_ids = handler.cycling_way_ids
+
+                except Exception as e:
+                    print(f"Warning: Could not load relation data: {str(e)}")
+                    cycling_way_ids = set()
+
+            # Build lookup dict from way ID to relation membership
+            way_id_to_relation = {}
+            if cycling_way_ids and 'id' in osm_df.columns:
+                way_id_to_relation = {way_id: (way_id in cycling_way_ids) for way_id in osm_df['id']}
+
             prepared_data = self._prepare_way(osm_df)
 
             osm_infra = []
             indicators_data = [] if include_indicators else None
 
-            for kante in tqdm(prepared_data, total=len(prepared_data)):
+            for idx, kante in enumerate(tqdm(prepared_data, total=len(prepared_data))):
                 result = self.set_value(kante, single=single)
 
                 if aggregated:
@@ -687,7 +726,10 @@ class Assessor():
 
                 # Evaluate and store all indicators if requested
                 if include_indicators:
-                    indicators = self._evaluate_indicators(kante)
+                    # Get way ID and check relation membership
+                    way_id = osm_df.iloc[idx]['id'] if 'id' in osm_df.columns else None
+                    in_relation = way_id_to_relation.get(way_id, False) if way_id else False
+                    indicators = self._evaluate_indicators(kante, in_cycling_relation=in_relation)
                     indicators_data.append(indicators)
 
             #osm_df = osm_df.explode()

@@ -5,7 +5,8 @@ from netapy import assessor_free
 osm_mask = ['id', 'osm_type', 'geometry', 'area']
 
 if __name__ == "__main__":
-    osm_file = pyrosm.OSM("Wedel_highway.osm.pbf") #hier laden wir die protobuf
+    pbf_path = "Wedel_highway.osm.pbf"
+    osm_file = pyrosm.OSM(pbf_path) #hier laden wir die protobuf
 
     #da ich bisher nicht weiß wie das gesamte netz in eine geodataframe mittels pyrosm geladen werden kann gibts ein kleines workaround
     osm_bike = osm_file.get_network(network_type="cycling") #hier wird die protobuf in eine dataframe umgewnandelt für das profil fahrrad
@@ -24,8 +25,8 @@ if __name__ == "__main__":
     # Option 1: Basic assessment without indicators
     # result = assessor.assess(osm, single=True, aggregated=True, include_indicators=False)
 
-    # Option 2: Assessment WITH all 44 indicators (recommended for flexibility)
-    result = assessor.assess(osm, single=True, aggregated=True, include_indicators=True)
+    # Option 2: Assessment WITH all 45 indicators including cycling relation membership
+    result = assessor.assess(osm, single=True, aggregated=True, include_indicators=True, pbf_file=pbf_path)
 
     # Filter to relevant columns only
     indicator_cols = [c for c in result.columns if c.startswith('is_') or c.startswith('can_') or c.startswith('use_')]
