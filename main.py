@@ -26,7 +26,15 @@ if __name__ == "__main__":
     # result = assessor.assess(osm, single=True, aggregated=True, include_indicators=False)
 
     # Option 2: Assessment WITH all 45 indicators including cycling relation membership
-    result = assessor.assess(osm, single=True, aggregated=True, include_indicators=True, pbf_file=pbf_path)
+    # Optional: export_pbf='output.osm.pbf' to export results as PBF file with bicycle_infrastructure tags
+    result = assessor.assess(
+        osm,
+        single=True,
+        aggregated=True,
+        include_indicators=True,
+        pbf_file=pbf_path,
+        export_pbf=None  # Set to 'Wedel_with_categories.osm.pbf' to export as PBF
+    )
 
     # Filter to relevant columns only
     indicator_cols = [c for c in result.columns if c.startswith('is_') or c.startswith('can_') or c.startswith('use_')]

@@ -672,7 +672,51 @@ class Assessor():
 
         return options[cat] if cat in options.keys() else cat
 
-    def assess(self, osm_df, single=False, aggregated=True, include_indicators=False, pbf_file=None): #ML
+    def _export_to_pbf(self, input_pbf, output_pbf, osm_df):
+        """
+        Export assessment results to a new PBF file by adding bicycle_infrastructure tag to ways.
+        """
+        try:
+            import osmium
+
+            # Create mapping from way ID to bicycle_infrastructure value
+            way_to_infra = dict(zip(osm_df['id'], osm_df['bicycle_infrastructure']))
+
+            class TagWriter(osmium.SimpleHandler):
+                def __init__(self, writer, way_to_infra):
+                    super().__init__()
+                    self.writer = writer
+                    self.way_to_infra = way_to_infra
+
+                def node(self, n):
+                    self.writer.add_node(n)
+
+                def way(self, w):
+                    if w.id in self.way_to_infra:
+                        # Create mutable way and add bicycle_infrastructure tag
+                        wb = osmium.osm.mutable.Way(w)
+                        wb.tags = list(w.tags) + [('bicycle_infrastructure', self.way_to_infra[w.id])]
+                        self.writer.add_way(wb)
+                    else:
+                        self.writer.add_way(w)
+
+                def relation(self, r):
+                    self.writer.add_relation(r)
+
+            # Create writer and handler
+            writer = osmium.SimpleWriter(output_pbf)
+            handler = TagWriter(writer, way_to_infra)
+
+            # Process the file
+            handler.apply_file(input_pbf, locations=True, idx='flex_mem')
+            writer.close()
+
+            print(f"Exported {len(way_to_infra)} ways with bicycle_infrastructure tags to {output_pbf}")
+
+        except Exception as e:
+            print(f"Warning: Could not export to PBF: {str(e)}")
+
+    def assess(self, osm_df, single=False, aggregated=True, include_indicators=False, pbf_file=None, export_pbf=None): #ML
         #ML the new argument should be called "aggregate_no". This way it fits better with the process -> we first classify the disaggregated and THEN make the decision to aggregate or not
         try:
             # Extract cycling relation membership from PBF file if provided
@@ -741,6 +785,10 @@ class Assessor():
                 # Add all indicator columns to the output dataframe
                 for col in indicators_df.columns:
                     osm_df[col] = indicators_df[col].values
+
+            # Export to PBF if requested
+            if export_pbf is not None and pbf_file is not None and 'id' in osm_df.columns:
+                self._export_to_pbf(pbf_file, export_pbf, osm_df)
 
             return osm_df
 
