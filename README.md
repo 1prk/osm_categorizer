@@ -149,5 +149,5 @@ With `single=True` and `aggregated=True`:
 
 ## Publications
 
-- **Łukawska, M., Richter, E., Porojkow, I., & Huber, S. (2025)**: *BikeNEAT: a framework for classifying bicycle infrastructure in OpenStreetMap.* Under Review in: Journal of Cycling and Micromobility Research.
+- **Łukawska, M., Richter, E., Porojkow, I., & Huber, S. (2025)**: *BikeNEAT: a framework for classifying bicycle infrastructure in OpenStreetMap.* Under Review in: Journal of Geovisualization and Spatial Analysis.
 
