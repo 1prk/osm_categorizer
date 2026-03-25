@@ -724,6 +724,63 @@ class NetascoreAssessor(Assessor):
           else:
             return "no"
 
+
+        def assign_dicts(x):
+
+          b_way_dict = {"b_way_right_0": is_bikepath_right and not can_walk_right,  # b_way_right_0,
+                        "b_way_right_1": is_bikepath_right and is_segregated,  # b_way_right_1,
+                        "b_way_right_2": can_bike and is_path and not can_walk_right,
+                        # and not is_footpath, #b_way_right_2,
+                        "b_way_right_3": can_bike and is_track and not can_walk_right,
+                        # and not is_footpath, #b_way_right_3,
+                        "b_way_right_4": can_bike and is_path and is_segregated,  # b_way_right_4,
+                        "b_way_right_5": can_bike and (is_track or is_footpath) and is_segregated,  # b_way_right_5,
+                        "b_way_right_6": can_bike and is_obligated_segregated,  # b_way_left_6,
+                        "b_way_right_7": (x["bicycle"] == "designated" and x["foot"] == "designated" and is_segregated),
+                        # b_way_right_7,
+                        "b_way_right_8": (x.get("cycleway:right:bicycle") == "designated" and x.get(
+                          "sidewalk:right:foot") == "designated" and is_segregated),  # b_way_right_8,
+                        "b_way_right_9": (
+                                  x.get("cycleway:bicycle") == "designated" and x.get("sidewalk:foot") == "designated"),
+                        # b_way_right_9
+
+                        "b_way_left_0": is_bikepath_left and not can_walk_left,  # b_way_left_0
+                        "b_way_left_1": is_bikepath_left and is_segregated,  # b_way_left_1
+                        "b_way_left_2": can_bike and is_path and not can_walk_left,
+                        # and not is_footpath, #b_way_left_2
+                        "b_way_left_3": can_bike and is_track and not can_walk_left,
+                        # and not is_footpath, #b_way_left_3
+                        "b_way_left_4": can_bike and is_path and is_segregated,  # b_way_left_4
+                        "b_way_left_5": can_bike and (is_track or is_footpath) and is_segregated,  # b_way_left_5
+                        "b_way_left_6": can_bike and is_obligated_segregated,  # b_way_left_6
+                        "b_way_left_7": (x["bicycle"] == "designated" and x["foot"] == "designated" and is_segregated),
+                        # b_way_left_7
+                        "b_way_left_8": (x.get("cycleway:left:bicycle") == "designated" and x.get(
+                          "sidewalk:left:foot") == "designated" and is_segregated),  # b_way_left_8
+                        "b_way_left_9": (
+                                  x.get("cycleway:bicycle") == "designated" and x.get("sidewalk:foot") == "designated")
+                        # b_way_left_9
+                        }
+
+          mixed_dict = {
+            "mixed_right_0": is_bikepath_right and can_walk_right and not is_segregated,  # mixed_right_0
+            "mixed_right_1": is_footpath and can_bike and not is_segregated,  # mixed_right_1
+            "mixed_right_10": is_footpath,
+            "mixed_right_11": can_bike,
+            "mixed_right_12": not is_segregated,
+            "mixed_right_2": (is_path or is_track) and can_bike and can_walk_right and not is_segregated,
+            # mixed_right_2
+
+            "mixed_left_0": is_bikepath_left and can_walk_left and not is_segregated,  # mixed_left_0
+            "mixed_left_10": is_footpath,
+            "mixed_left_11": can_bike,
+            "mixed_left_12": not is_segregated,
+            "mixed_left_1": is_footpath and can_bike and not is_segregated,  # mixed_left_1
+            "mixed_left_2": (is_path or is_track) and can_bike and can_walk_left and not is_segregated  # mixed_left_2
+          }
+
+          return b_way_dict, mixed_dict
+
         cat = None
         cat = get_infra(x)
         # making sure that the variable cat has been filled
@@ -734,17 +791,17 @@ class NetascoreAssessor(Assessor):
         else:
           # for categories with "right & left" - revert if needed
           if not is_reversed:
-            return cat
+            return [cat, dicts]
           else:
             sides = ["left", "right"] if cat.split("_")[-1] == "right" else ["right", "left"]
             for side in sides:
               cat = " ".join(cat.split(side))
 
             res = cat.split()
-            return res[0] + sides[1] + res[1] + sides[0]
+            return [res[0] + sides[1] + res[1] + sides[0], dicts]
 
       for direction in ["forward", "backward"]:
-        vals = {x[0]:set_value(x[1], direction) for x in data.iterrows()}
+        vals = {x[0]:set_value(x[1], direction)[0] for x in data.iterrows()}
         obj["data"][direction] = vals
 
       #dicts = {x[0]: set_value(x[1], "forward")[1] for x in data.iterrows()}
@@ -752,7 +809,7 @@ class NetascoreAssessor(Assessor):
       # Write derived attributes to the network if write = True.
       if write:
         self._write_to_network(obj, network)
-    return obj
+    return obj #[obj, dicts]
 
   def derive_pedestrian_infrastructure(self, network, read = False, write = True,
                                        read_deps = None, write_deps = None, **kwargs):
