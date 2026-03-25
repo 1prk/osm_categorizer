@@ -3,7 +3,7 @@ import json
 import pandas as pd
 import unittest
 import warnings
-from netapy import defaults, assessor_free
+from assessor import defaults, assessor_free
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 

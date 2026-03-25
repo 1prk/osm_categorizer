@@ -8,7 +8,8 @@ from abc import abstractmethod
 from networkx import MultiDiGraph
 from pyproj import CRS
 
-from netapy import defaults
+from assessor import defaults
+from assessor.exceptions import AssessorNetworkError
 
 logger = logging.getLogger(__name__)
 
@@ -298,4 +299,4 @@ class NetascoreNetwork(Network):
           pass
         self._check_layer_presence(name, fetch = False)
       else:
-        raise NetapyNetworkError(f"Network layer '{name}' is required but not present")
+        raise AssessorNetworkError(f"Network layer '{name}' is required but not present")

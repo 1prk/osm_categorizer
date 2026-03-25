@@ -8,9 +8,9 @@ import warnings
 
 from abc import abstractmethod
 
-from netapy import defaults, utils
-from netapy.profiles import NetascoreProfile
-from netapy.exceptions import NetapyNetworkError
+from assessor import defaults, utils
+from assessor.profiles import NetascoreProfile
+from assessor.exceptions import AssessorNetworkError
 
 ENABLE_LOGGING = True
 logger = logging.getLogger(__name__)

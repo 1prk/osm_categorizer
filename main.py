@@ -1,6 +1,6 @@
 import pyrosm
 import pandas as pd
-from netapy import assessor_free
+from assessor import assessor_free
 
 osm_mask = ['id', 'osm_type', 'geometry', 'area']
 

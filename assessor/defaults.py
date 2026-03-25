@@ -1,4 +1,4 @@
-from netapy.profiles import NetascoreProfile
+from assessor.profiles import NetascoreProfile
 
 NETASCORE_PROFILES = {
   "bike": NetascoreProfile({

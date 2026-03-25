@@ -40,7 +40,7 @@ The assessor expects an OSM network as a GeoDataFrame, which can be created usin
 
 ```python
 import pyrosm
-from netapy import assessor_free
+from assessor import assessor_free
 
 # Load OSM data
 osm_file = pyrosm.OSM("sachsen-latest.osm.pbf")

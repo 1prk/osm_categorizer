@@ -3,7 +3,7 @@ import json
 import overpy
 import pandas as pd
 import geopandas as gpd
-from netapy import defaults
+from assessor import defaults
 from tqdm import tqdm
 
 class Assessor():
@@ -328,17 +328,20 @@ class Assessor():
 
                 if ('access' in x.values() and self.is_not_accessible(x)) or ('tram' in x.values() and x['tram'] == 'yes'):
                     return 'no'  # unpacked from "service"
-                # remove service right away
 
-                if self.is_service(x):
-                    return "service_misc"
-
+                # Check high-priority bicycle infrastructure BEFORE service roads
+                # This ensures that service roads with bicycle_road or cycle_highway tags
+                # are correctly categorized regardless of bicycle=designated status
                 if self.is_cycle_highway(x):
                     return "cycle_highway"
 
                 #### 3 # new option: "bicycle_road"
                 if self.is_bikeroad(x):
                     return "bicycle_road"
+
+                # Now check service roads
+                if self.is_service(x):
+                    return "service_misc"
 
                 #### 1
                 elif any(conditions_b_way_right):
@@ -510,17 +513,20 @@ class Assessor():
             def get_infra(x):
                 if ('access' in x.values() and self.is_not_accessible(x)) or ('tram' in x.values() and x['tram'] == 'yes'):
                     return 'no'  # unpacked from "service"
-                # remove service right away
 
-                if self.is_service(x):
-                    return "service_misc"
-
+                # Check high-priority bicycle infrastructure BEFORE service roads
+                # This ensures that service roads with bicycle_road or cycle_highway tags
+                # are correctly categorized regardless of bicycle=designated status
                 if self.is_cycle_highway(x):
                     return "cycle_highway"
 
                 #### 3 # new option: "bicycle_road"
                 if self.is_bikeroad(x):
                     return "bicycle_road"
+
+                # Now check service roads
+                if self.is_service(x):
+                    return "service_misc"
 
                 #### 1
                 elif any(conditions_b_way_left) or any(conditions_b_way_right):

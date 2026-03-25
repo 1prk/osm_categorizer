@@ -6,8 +6,8 @@ import pprint
 import overpy
 from unittest.mock import MagicMock
 
-from netapy.assessors import NetascoreAssessor
-from netapy.defaults import NETASCORE_STREET_KEYS
+from assessor.assessors import NetascoreAssessor
+from assessor.defaults import NETASCORE_STREET_KEYS
 
 class TestNetascoreAssessorSetValuesMethod(unittest.TestCase):
     def setUp(self):

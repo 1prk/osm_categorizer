@@ -1,9 +1,9 @@
-import netapy
+import assessor
 
-assessor = netapy.assessor_free.Assessor()
+assessor_instance = assessor.assessor_free.Assessor()
 
-test = assessor.test_osm_way('475826466')
+test = assessor_instance.test_osm_way('475826466')
 
-assessed = assessor.set_value(test)
+assessed = assessor_instance.set_value(test)
 
 test_assessed = {'osm_infra': assessed}

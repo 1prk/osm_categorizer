@@ -5,8 +5,8 @@ from abc import abstractmethod
 from collections import OrderedDict
 from collections.abc import MutableMapping
 
-from netapy import utils
-from netapy.exceptions import NetapyProfileError
+from assessor import utils
+from assessor.exceptions import AssessorProfileError
 
 
 class Profile(dict):
@@ -119,7 +119,7 @@ class NetascoreProfile(Profile):
     elif maptype == "classes":
       key_parser = NetascoreProfile.parse_condition
     else:
-      raise NetapyProfileError(
+      raise AssessorProfileError(
         f"Unsupported mapping type for indicator '{name}': {maptype}"
       )
     value_parser = NetascoreProfile.parse_assignment
@@ -174,4 +174,4 @@ class NetascoreProfile(Profile):
       return utils.clean_string(obj)
     if isinstance(obj, dict):
       return NetascoreProfile.parse_indicator_mapping(obj)
-    raise NetapyProfileError(f"Unsupported assignment value: {obj}")
+    raise AssessorProfileError(f"Unsupported assignment value: {obj}")
