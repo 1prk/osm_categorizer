@@ -575,9 +575,9 @@ class Assessor():
         """
         indicators = {
             # Basic infrastructure types
+            'is_footway': self.is_footway(x),
             'is_path': self.is_path(x),
             'is_track': self.is_track(x),
-            'is_footway': self.is_footway(x),
 
             # Physical attributes
             'is_segregated': self.is_segregated(x),
