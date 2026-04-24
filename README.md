@@ -115,23 +115,23 @@ The exported PBF file can be used in JOSM, QGIS, or other OSM tools.
 
 ## Indicators
 
-With `include_indicators=True`, 41 Boolean indicators are output:
+With `include_indicators=True`, 32 Boolean indicators are output:
 
-**Infrastructure types**: is_path, is_track, is_footway, is_segregated, is_smooth, is_indoor
+**Basic infrastructure types**: is_footway, is_path, is_track
 
-**Access**: is_accessible, is_not_accessible, can_bike, can_walk_right, can_walk_left, can_cardrive, is_vehicle_allowed, use_sidepath
+**Physical attributes**: is_segregated
 
-**Designation**: is_designated, is_bicycle_designated_left/right, is_pedestrian_designated_left/right
+**Access/permissions**: can_bike, can_walk_right/left
+
+**Designation**: is_designated, is_bicycle_designated_right/left, is_pedestrian_designated_right/left
 
 **Traffic signs**: is_obligated_segregated, is_obligated_shared, is_sign_shared_way, is_sign_shared_buslane
 
-**Service**: is_service_tag, is_agricultural, is_service
+**Infrastructure presence**: is_bikepath_right/left, is_bikelane_right/lef, is_shared_buslane_right/left
 
-**Infrastructure left/right**: is_bikepath_left/right, is_bikelane_left/right, is_shared_buslane_left/right, is_shared_with_mit_left/right, is_pedestrian_left/right
+**Special categories**: is_cycle_highway, is_bikeroad
 
-**Special**: is_cycle_highway, is_bikeroad, is_path_not_forbidden
-
-**Relations**: is_in_cycling_relation (only when `pbf_file` is provided)
+**Relations**: is_in_cycling_relation (only when pbf_file is provided)
 
 ## Supported Categories
 
